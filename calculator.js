@@ -132,7 +132,7 @@ function getRandomRecommendations(count) {
 }
 
 // Функции для калькулятора сохранения ресурсов
-function showRecyclingTab(tabName) {
+function showRecyclingTab(tabName, event) {
     // Скрыть все формы
     document.querySelectorAll('.recycling-form').forEach(form => {
         form.classList.remove('active');
@@ -149,9 +149,9 @@ function showRecyclingTab(tabName) {
         targetForm.classList.add('active');
     }
     
-    // event может быть не определен в некоторых случаях
-    if (event && event.target) {
-        event.target.classList.add('active');
+    // Используем event.currentTarget вместо event.target для лучшей совместимости
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
     }
 }
 
@@ -340,8 +340,16 @@ function updatePollutionImpactStats() {
     const currentYear = new Date().getFullYear();
     const growthFactor = 1 + (currentYear - 2020) * 0.02; // Рост на 2% в год
     
-    document.getElementById('animalDeaths').textContent = (1.5 * growthFactor).toFixed(1) + ' млн';
-    document.getElementById('humanDeaths').textContent = (9 * growthFactor).toFixed(1) + ' млн';
+    const animalDeathsElement = document.getElementById('animalDeaths');
+    const humanDeathsElement = document.getElementById('humanDeaths');
+    
+    if (animalDeathsElement) {
+        animalDeathsElement.textContent = (1.5 * growthFactor).toFixed(1) + ' млн';
+    }
+    
+    if (humanDeathsElement) {
+        humanDeathsElement.textContent = (9 * growthFactor).toFixed(1) + ' млн';
+    }
     
     console.log("Статистика последствий загрязнения обновлена");
 }
@@ -361,3 +369,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Экспорт функций для Vercel (если нужно использовать как serverless function)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        calculateCarbonFootprint,
+        showCarbonResult,
+        getRandomRecommendations,
+        showRecyclingTab,
+        calculateResourceSavings,
+        calculateBatteriesSavings,
+        calculateBottlesSavings,
+        displaySavingsResults,
+        updatePollutionImpactStats
+    };
+}
