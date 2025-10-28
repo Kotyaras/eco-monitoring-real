@@ -851,3 +851,9 @@ input:focus {
     background: #4CAF50;
     color: white;
 }
+#pollutionMap {
+    height: 500px !important;
+    width: 100% !important;
+    background: #f8f9fa !important;
+    border: 2px solid red !important; /* Временная рамка для видимости */
+}
