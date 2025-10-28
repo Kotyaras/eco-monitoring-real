@@ -156,6 +156,13 @@ function showRecyclingTab(tabName, event) {
     // Активировать кнопку
     if (event && event.currentTarget) {
         event.currentTarget.classList.add('active');
+    } else {
+        // Альтернативный способ если event не передан
+        document.querySelectorAll('.calc-tab').forEach(tab => {
+            if (tab.getAttribute('onclick') && tab.getAttribute('onclick').includes(tabName)) {
+                tab.classList.add('active');
+            }
+        });
     }
 }
 
