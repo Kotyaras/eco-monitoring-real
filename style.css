@@ -804,3 +804,50 @@ input:focus {
     outline: 2px solid var(--primary-green);
     outline-offset: 2px;
 }
+/* Добавьте в конец вашего CSS файла */
+.leaflet-container {
+    background: #f8f9fa;
+}
+
+.custom-control {
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.timeline-container {
+    margin-bottom: 10px;
+}
+
+.timeline-container h4 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+}
+
+.timeline-slider {
+    width: 200px;
+    margin: 0 10px;
+}
+
+.data-type-buttons {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.data-btn {
+    padding: 8px 12px;
+    border: 1px solid #4CAF50;
+    background: white;
+    color: #4CAF50;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 12px;
+}
+
+.data-btn.active {
+    background: #4CAF50;
+    color: white;
+}
