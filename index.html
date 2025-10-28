@@ -40,27 +40,30 @@
             </div>
             <div id="map"></div>
         </section>
-
         <section class="calculator">
-            <h2>Калькулятор углеродного следа</h2>
-            <div class="calc-form">
-                <div class="input-group">
-                    <label>Пробег автомобиля (км/месяц):</label>
-                    <input type="number" id="carKm" value="500">
-                </div>
-                <div class="input-group">
-                    <label>Электричество (кВтч/месяц):</label>
-                    <input type="number" id="electricity" value="200">
-                </div>
-                <div class="input-group">
-                    <label>Авиаперелеты (часы/год):</label>
-                    <input type="number" id="flights" value="10">
-                </div>
-                <button onclick="calculateFootprint()">Рассчитать след</button>
-                
-                <div id="result" class="result"></div>
-            </div>
-        </section>
+    <h2>🌍 Калькулятор углеродного следа</h2>
+    
+    <div class="calc-form">
+        <div class="input-group">
+            <label>🚗 Пробег на автомобиле в месяц (км):</label>
+            <input type="number" id="carKm" placeholder="Введите километры">
+        </div>
+        
+        <div class="input-group">
+            <label>💡 Потребление электроэнергии в месяц (кВт·ч):</label>
+            <input type="number" id="electricity" placeholder="Введите кВт·ч">
+        </div>
+        
+        <div class="input-group">
+            <label>✈️ Количество перелетов в год:</label>
+            <input type="number" id="flights" placeholder="Введите количество перелетов">
+        </div>
+        
+        <button onclick="calculateCarbonFootprint()">Рассчитать углеродный след</button>
+        
+        <div id="carbonResult" class="result"></div>
+    </div>
+</section>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
