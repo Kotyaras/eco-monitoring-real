@@ -66,7 +66,8 @@ async function loadAirQualityData() {
             airQualityElement.textContent = 'Загрузка...';
         }
         
-        const response = await fetch('/.netlify/functions/air-quality');
+        // ИСПРАВЛЕННЫЙ ПУТЬ ДЛЯ VERCEL
+        const response = await fetch('/api/air-quality');
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -156,7 +157,8 @@ async function loadFireData() {
             fireCounterElement.textContent = 'Загрузка...';
         }
         
-        const response = await fetch('/.netlify/functions/forest-fires');
+        // ИСПРАВЛЕННЫЙ ПУТЬ ДЛЯ VERCEL
+        const response = await fetch('/api/forest-fires');
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
