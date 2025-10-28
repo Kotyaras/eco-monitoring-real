@@ -133,6 +133,8 @@ function getRandomRecommendations(count) {
 
 // Функции для калькулятора сохранения ресурсов
 function showRecyclingTab(tabName, event) {
+    console.log('Переключение на вкладку:', tabName);
+    
     // Скрыть все формы
     document.querySelectorAll('.recycling-form').forEach(form => {
         form.classList.remove('active');
@@ -143,18 +145,21 @@ function showRecyclingTab(tabName, event) {
         tab.classList.remove('active');
     });
     
-    // Показать выбранную форму и активировать кнопку
+    // Показать выбранную форму
     const targetForm = document.getElementById(tabName + 'Recycling');
+    console.log('Целевая форма:', targetForm);
+    
     if (targetForm) {
         targetForm.classList.add('active');
     }
     
-    // Используем event.currentTarget вместо event.target для лучшей совместимости
+    // Активировать кнопку
     if (event && event.currentTarget) {
         event.currentTarget.classList.add('active');
     }
 }
 
+// Общая функция для расчета ресурсов (для вкладки "general")
 function calculateResourceSavings() {
     const paper = parseFloat(document.getElementById('paperWaste').value) || 0;
     const plastic = parseFloat(document.getElementById('plasticWaste').value) || 0;
@@ -369,18 +374,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-
-// Экспорт функций для Vercel (если нужно использовать как serverless function)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        calculateCarbonFootprint,
-        showCarbonResult,
-        getRandomRecommendations,
-        showRecyclingTab,
-        calculateResourceSavings,
-        calculateBatteriesSavings,
-        calculateBottlesSavings,
-        displaySavingsResults,
-        updatePollutionImpactStats
-    };
-}
