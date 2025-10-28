@@ -4,11 +4,9 @@ exports.handler = async function(event, context) {
   console.log('Forest fires function called');
   
   try {
-    // Упрощенный запрос к NASA API
     const today = new Date();
     const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
     
-    // Пробуем разные источники NASA
     const urls = [
       `https://firms.modaps.eosdis.nasa.gov/api/area/csv/MODIS_NRT/world/1/${dateStr}`,
       `https://firms.modaps.eosdis.nasa.gov/api/area/csv/VIIRS_SNPP_NRT/world/1/${dateStr}`,
@@ -17,7 +15,6 @@ exports.handler = async function(event, context) {
     
     let fires = [];
     
-    // Пробуем каждый URL пока не получим данные
     for (const url of urls) {
       try {
         console.log('Trying URL:', url);
@@ -39,7 +36,6 @@ exports.handler = async function(event, context) {
       }
     }
     
-    // Если получили реальные данные
     if (fires.length > 0) {
       console.log('Returning real fire data:', fires.length);
       return {
@@ -49,7 +45,7 @@ exports.handler = async function(event, context) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          fires: fires.slice(0, 73), // Ограничиваем 73 пожарами
+          fires: fires.slice(0, 73),
           total: fires.length,
           timestamp: Date.now(),
           source: 'NASA FIRMS API'
@@ -57,14 +53,12 @@ exports.handler = async function(event, context) {
       };
     }
     
-    // Если не получили реальные данные - бросаем ошибку чтобы перейти к демо-данным
     throw new Error('No real fire data available');
     
   } catch (error) {
     console.error('All NASA APIs failed, using demo data:', error);
     
-    // Генерируем 73 пожара по всему миру
-    const demoData = generateGlobalFires(73);
+    const demoData = generateGlobalFiresOnLand(73);
     
     console.log('Returning DEMO fire data:', demoData.length, 'fires');
     
@@ -79,13 +73,12 @@ exports.handler = async function(event, context) {
         demo: true,
         total: demoData.length,
         timestamp: Date.now(),
-        source: 'Demo Data - Global Coverage'
+        source: 'Demo Data - Global Coverage (Land Only)'
       })
     };
   }
 };
 
-// Очень простой парсинг CSV
 function parseSimpleCSV(csv) {
   const fires = [];
   const lines = csv.split('\n');
@@ -100,9 +93,7 @@ function parseSimpleCSV(csv) {
       const lng = parseFloat(cells[1]);
       const brightness = parseFloat(cells[2]);
       
-      // Проверяем что это валидные координаты
       if (!isNaN(lat) && !isNaN(lng) && !isNaN(brightness)) {
-        // Фильтруем по территории России и соседних регионов
         if (lat >= 30 && lat <= 80 && lng >= 10 && lng <= 180) {
           fires.push({
             latitude: lat,
@@ -129,35 +120,28 @@ function getRegion(lat, lng) {
   return "Россия";
 }
 
-// Генерация демо-данных для 73 пожаров по всему миру
-function generateGlobalFires(count) {
+function generateGlobalFiresOnLand(count) {
   const fires = [];
-  const regions = [
-    // Северная Америка
-    { name: "Северная Америка", latMin: 25, latMax: 70, lngMin: -130, lngMax: -60, weight: 15 },
-    // Южная Америка
-    { name: "Южная Америка", latMin: -55, latMax: 15, lngMin: -80, lngMax: -35, weight: 12 },
-    // Европа
-    { name: "Европа", latMin: 35, latMax: 60, lngMin: -10, lngMax: 40, weight: 10 },
-    // Азия (включая Россию)
-    { name: "Азия", latMin: 10, latMax: 70, lngMin: 40, lngMax: 150, weight: 20 },
-    // Африка
-    { name: "Африка", latMin: -35, latMax: 35, lngMin: -20, lngMax: 50, weight: 12 },
-    // Австралия и Океания
-    { name: "Австралия", latMin: -45, latMax: -10, lngMin: 110, lngMax: 155, weight: 4 }
+  
+  const landRegions = [
+    { name: "Северная Америка", latMin: 30, latMax: 60, lngMin: -120, lngMax: -70, weight: 15 },
+    { name: "Южная Америка", latMin: -35, latMax: 10, lngMin: -75, lngMax: -45, weight: 12 },
+    { name: "Европа", latMin: 40, latMax: 55, lngMin: -5, lngMax: 35, weight: 10 },
+    { name: "Азия", latMin: 20, latMax: 55, lngMin: 50, lngMax: 120, weight: 20 },
+    { name: "Африка", latMin: -10, latMax: 30, lngMin: 10, lngMax: 40, weight: 12 },
+    { name: "Австралия", latMin: -35, latMax: -15, lngMin: 120, lngMax: 145, weight: 4 }
   ];
   
-  // Распределяем пожары по регионам согласно весам
+  let totalWeight = landRegions.reduce((sum, region) => sum + region.weight, 0);
   let remaining = count;
   const regionFires = [];
   
-  regions.forEach(region => {
-    const regionCount = Math.round((region.weight / 73) * count);
+  landRegions.forEach(region => {
+    const regionCount = Math.round((region.weight / totalWeight) * count);
     regionFires.push({ ...region, count: Math.min(regionCount, remaining) });
     remaining -= regionCount;
   });
   
-  // Если остались нераспределенные пожары, добавляем их в регионы с наибольшим весом
   if (remaining > 0) {
     regionFires.sort((a, b) => b.weight - a.weight);
     for (let i = 0; i < remaining && i < regionFires.length; i++) {
@@ -165,41 +149,83 @@ function generateGlobalFires(count) {
     }
   }
   
-  // Генерируем пожары для каждого региона
   regionFires.forEach(region => {
-    for (let i = 0; i < region.count; i++) {
+    let generatedInRegion = 0;
+    let attempts = 0;
+    const maxAttempts = region.count * 10;
+    
+    while (generatedInRegion < region.count && attempts < maxAttempts) {
+      attempts++;
+      
       const lat = region.latMin + Math.random() * (region.latMax - region.latMin);
       const lng = region.lngMin + Math.random() * (region.lngMax - region.lngMin);
-      const brightness = 100 + Math.random() * 400; // от 100 до 500
       
-      fires.push({
-        latitude: parseFloat(lat.toFixed(4)),
-        longitude: parseFloat(lng.toFixed(4)),
-        brightness: parseFloat(brightness.toFixed(1)),
-        date: new Date().toISOString(),
-        region: region.name,
-        country: getCountryByRegion(region.name, lat, lng)
-      });
+      if (isOnLand(lat, lng)) {
+        const brightness = 100 + Math.random() * 400;
+        
+        fires.push({
+          latitude: parseFloat(lat.toFixed(4)),
+          longitude: parseFloat(lng.toFixed(4)),
+          brightness: parseFloat(brightness.toFixed(1)),
+          date: new Date().toISOString(),
+          region: region.name,
+          country: getCountryByRegion(region.name, lat, lng)
+        });
+        
+        generatedInRegion++;
+      }
     }
+    
+    console.log(`Generated ${generatedInRegion} fires in ${region.name} (${attempts} attempts)`);
   });
   
   return fires;
 }
 
-// Функция для определения страны по региону и координатам
+function isOnLand(lat, lng) {
+  // Атлантический океан
+  if (lng >= -60 && lng <= 20 && lat >= -40 && lat <= 40) return false;
+  
+  // Тихий океан
+  if ((lng >= 120 || lng <= -80) && lat >= -60 && lat <= 60) return false;
+  
+  // Индийский океан
+  if (lng >= 40 && lng <= 120 && lat >= -40 && lat <= 20) return false;
+  
+  // Северный Ледовитый океан
+  if (lat > 75) return false;
+  
+  // Карибское море
+  if (lng >= -85 && lng <= -60 && lat >= 10 && lat <= 25) return false;
+  
+  // Средиземное море
+  if (lng >= -5 && lng <= 35 && lat >= 30 && lat <= 45) return false;
+  
+  // Балтийское море
+  if (lng >= 10 && lng <= 30 && lat >= 53 && lat <= 60) return false;
+  
+  // Черное и Каспийское моря
+  if (lng >= 28 && lng <= 50 && lat >= 40 && lat <= 47) return false;
+  
+  // Великие озера
+  if (lng >= -92 && lng <= -76 && lat >= 41 && lat <= 49) return false;
+  
+  return true;
+}
+
 function getCountryByRegion(region, lat, lng) {
-  const countries = {
+  const countryMap = {
     "Северная Америка": ["США", "Канада", "Мексика"],
     "Южная Америка": ["Бразилия", "Аргентина", "Чили", "Перу", "Колумбия"],
     "Европа": ["Испания", "Португалия", "Италия", "Греция", "Франция", "Германия"],
     "Азия": ["Россия", "Китай", "Индия", "Казахстан", "Индонезия", "Таиланд"],
     "Африка": ["Конго", "Ангола", "Замбия", "ЮАР", "Кения", "Эфиопия"],
-    "Австралия": ["Австралия", "Новая Зеландия", "Папуа-Новая Гвинея"]
+    "Австралия": ["Австралия", "Новая Зеландия"]
   };
   
-  const regionCountries = countries[region];
-  if (regionCountries) {
-    return regionCountries[Math.floor(Math.random() * regionCountries.length)];
+  const countries = countryMap[region];
+  if (countries && countries.length > 0) {
+    return countries[Math.floor(Math.random() * countries.length)];
   }
   
   return "Неизвестно";
