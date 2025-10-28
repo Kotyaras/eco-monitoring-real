@@ -123,25 +123,73 @@ function getRegion(lat, lng) {
 function generateGlobalFiresOnLand(count) {
   const fires = [];
   
+  // Определяем только континентальные регионы с землей
   const landRegions = [
-    { name: "Северная Америка", latMin: 30, latMax: 60, lngMin: -120, lngMax: -70, weight: 15 },
-    { name: "Южная Америка", latMin: -35, latMax: 10, lngMin: -75, lngMax: -45, weight: 12 },
-    { name: "Европа", latMin: 40, latMax: 55, lngMin: -5, lngMax: 35, weight: 10 },
-    { name: "Азия", latMin: 20, latMax: 55, lngMin: 50, lngMax: 120, weight: 20 },
-    { name: "Африка", latMin: -10, latMax: 30, lngMin: 10, lngMax: 40, weight: 12 },
-    { name: "Австралия", latMin: -35, latMax: -15, lngMin: 120, lngMax: 145, weight: 4 }
+    {
+      name: "Северная Америка",
+      areas: [
+        { latMin: 25, latMax: 50, lngMin: -125, lngMax: -65 }, // Запад и центр США
+        { latMin: 45, latMax: 60, lngMin: -110, lngMax: -60 }, // Канада
+        { latMin: 15, latMax: 30, lngMin: -115, lngMax: -85 }  // Мексика
+      ],
+      weight: 15
+    },
+    {
+      name: "Южная Америка",
+      areas: [
+        { latMin: -35, latMax: 5, lngMin: -80, lngMax: -45 },  // Бразилия, Аргентина, Чили
+        { latMin: -10, latMax: 12, lngMin: -80, lngMax: -60 }  // Север Южной Америки
+      ],
+      weight: 12
+    },
+    {
+      name: "Европа",
+      areas: [
+        { latMin: 40, latMax: 55, lngMin: -10, lngMax: 25 },   // Западная Европа
+        { latMin: 45, latMax: 60, lngMin: 10, lngMax: 40 },    // Восточная Европа
+        { latMin: 35, latMax: 45, lngMin: -5, lngMax: 15 }     // Южная Европа
+      ],
+      weight: 10
+    },
+    {
+      name: "Азия",
+      areas: [
+        { latMin: 20, latMax: 50, lngMin: 70, lngMax: 120 },   // Китай, Индия
+        { latMin: 50, latMax: 70, lngMin: 50, lngMax: 140 },   // Россия (Сибирь, Дальний Восток)
+        { latMin: 25, latMax: 40, lngMin: 120, lngMax: 145 }   // Япония, Корея
+      ],
+      weight: 20
+    },
+    {
+      name: "Африка",
+      areas: [
+        { latMin: -35, latMax: -5, lngMin: 15, lngMax: 35 },   // Южная Африка
+        { latMin: -5, latMax: 15, lngMin: 10, lngMax: 30 },    // Центральная Африка
+        { latMin: 15, latMax: 35, lngMin: -20, lngMax: 40 }    // Северная Африка
+      ],
+      weight: 12
+    },
+    {
+      name: "Австралия",
+      areas: [
+        { latMin: -35, latMax: -15, lngMin: 115, lngMax: 150 } // Австралия
+      ],
+      weight: 4
+    }
   ];
   
   let totalWeight = landRegions.reduce((sum, region) => sum + region.weight, 0);
   let remaining = count;
   const regionFires = [];
   
+  // Распределяем пожары по регионам
   landRegions.forEach(region => {
     const regionCount = Math.round((region.weight / totalWeight) * count);
     regionFires.push({ ...region, count: Math.min(regionCount, remaining) });
     remaining -= regionCount;
   });
   
+  // Распределяем оставшиеся пожары
   if (remaining > 0) {
     regionFires.sort((a, b) => b.weight - a.weight);
     for (let i = 0; i < remaining && i < regionFires.length; i++) {
@@ -149,18 +197,23 @@ function generateGlobalFiresOnLand(count) {
     }
   }
   
+  // Генерируем пожары для каждого региона
   regionFires.forEach(region => {
     let generatedInRegion = 0;
     let attempts = 0;
-    const maxAttempts = region.count * 10;
+    const maxAttempts = region.count * 20; // Увеличиваем лимит попыток
     
     while (generatedInRegion < region.count && attempts < maxAttempts) {
       attempts++;
       
-      const lat = region.latMin + Math.random() * (region.latMax - region.latMin);
-      const lng = region.lngMin + Math.random() * (region.lngMax - region.lngMin);
+      // Случайно выбираем зону внутри региона
+      const area = region.areas[Math.floor(Math.random() * region.areas.length)];
       
-      if (isOnLand(lat, lng)) {
+      const lat = area.latMin + Math.random() * (area.latMax - area.latMin);
+      const lng = area.lngMin + Math.random() * (area.lngMax - area.lngMin);
+      
+      // Проверяем, что точка на суше (упрощенная проверка)
+      if (isDefinitelyOnLand(lat, lng)) {
         const brightness = 100 + Math.random() * 400;
         
         fires.push({
@@ -182,51 +235,119 @@ function generateGlobalFiresOnLand(count) {
   return fires;
 }
 
-function isOnLand(lat, lng) {
+// Улучшенная функция проверки нахождения на суше
+function isDefinitelyOnLand(lat, lng) {
+  // Основные океаны и моря (расширенный список)
+  
   // Атлантический океан
-  if (lng >= -60 && lng <= 20 && lat >= -40 && lat <= 40) return false;
+  if (lng >= -70 && lng <= 20 && lat >= -50 && lat <= 50) return false;
   
   // Тихий океан
-  if ((lng >= 120 || lng <= -80) && lat >= -60 && lat <= 60) return false;
+  if ((lng >= 120 || lng <= -70) && lat >= -60 && lat <= 60) return false;
   
   // Индийский океан
-  if (lng >= 40 && lng <= 120 && lat >= -40 && lat <= 20) return false;
+  if (lng >= 40 && lng <= 120 && lat >= -50 && lat <= 30) return false;
   
   // Северный Ледовитый океан
-  if (lat > 75) return false;
-  
-  // Карибское море
-  if (lng >= -85 && lng <= -60 && lat >= 10 && lat <= 25) return false;
+  if (lat > 70) return false;
   
   // Средиземное море
-  if (lng >= -5 && lng <= 35 && lat >= 30 && lat <= 45) return false;
+  if (lng >= -5 && lng <= 36 && lat >= 30 && lat <= 45) return false;
+  
+  // Карибское море
+  if (lng >= -90 && lng <= -60 && lat >= 10 && lat <= 25) return false;
   
   // Балтийское море
   if (lng >= 10 && lng <= 30 && lat >= 53 && lat <= 60) return false;
   
-  // Черное и Каспийское моря
-  if (lng >= 28 && lng <= 50 && lat >= 40 && lat <= 47) return false;
+  // Черное море
+  if (lng >= 28 && lng <= 42 && lat >= 41 && lat <= 47) return false;
   
-  // Великие озера
+  // Каспийское море
+  if (lng >= 46 && lng <= 54 && lat >= 36 && lat <= 47) return false;
+  
+  // Красное море
+  if (lng >= 32 && lng <= 43 && lat >= 12 && lat <= 30) return false;
+  
+  // Персидский залив
+  if (lng >= 48 && lng <= 56 && lat >= 24 && lat <= 30) return false;
+  
+  // Японское море
+  if (lng >= 127 && lng <= 142 && lat >= 35 && lat <= 45) return false;
+  
+  // Охотское море
+  if (lng >= 140 && lng <= 155 && lat >= 50 && lat <= 60) return false;
+  
+  // Берингово море
+  if (lng >= 160 && lng <= -160 && lat >= 55 && lat <= 65) return false;
+  
+  // Великие озера (Северная Америка)
   if (lng >= -92 && lng <= -76 && lat >= 41 && lat <= 49) return false;
   
+  // Озеро Байкал
+  if (lng >= 103 && lng <= 110 && lat >= 51 && lat <= 56) return false;
+  
+  // Основные пустынные регионы (где пожары менее вероятны, но возможны)
+  // Сахара
+  if (lng >= -15 && lng <= 35 && lat >= 18 && lat <= 30) {
+    // В пустыне пожары редки, но возможны в оазисах
+    return Math.random() > 0.9; // Только 10% точек в пустыне
+  }
+  
+  // Гренландия (ледник)
+  if (lng >= -70 && lng <= -10 && lat >= 60 && lat <= 85) return false;
+  
+  // Антарктида
+  if (lat < -60) return false;
+  
+  // Если не попало ни в одно исключение - считаем что на суше
   return true;
 }
 
 function getCountryByRegion(region, lat, lng) {
   const countryMap = {
-    "Северная Америка": ["США", "Канада", "Мексика"],
-    "Южная Америка": ["Бразилия", "Аргентина", "Чили", "Перу", "Колумбия"],
-    "Европа": ["Испания", "Португалия", "Италия", "Греция", "Франция", "Германия"],
-    "Азия": ["Россия", "Китай", "Индия", "Казахстан", "Индонезия", "Таиланд"],
-    "Африка": ["Конго", "Ангола", "Замбия", "ЮАР", "Кения", "Эфиопия"],
-    "Австралия": ["Австралия", "Новая Зеландия"]
+    "Северная Америка": getNorthAmericanCountry(lat, lng),
+    "Южная Америка": getSouthAmericanCountry(lat, lng),
+    "Европа": getEuropeanCountry(lat, lng),
+    "Азия": getAsianCountry(lat, lng),
+    "Африка": getAfricanCountry(lat, lng),
+    "Австралия": ["Австралия", "Новая Зеландия"][Math.floor(Math.random() * 2)]
   };
   
-  const countries = countryMap[region];
-  if (countries && countries.length > 0) {
-    return countries[Math.floor(Math.random() * countries.length)];
-  }
-  
-  return "Неизвестно";
+  return countryMap[region] || "Неизвестно";
+}
+
+// Вспомогательные функции для определения стран по координатам
+function getNorthAmericanCountry(lat, lng) {
+  if (lat > 40 && lng < -100) return "США";
+  if (lat > 40 && lng >= -100) return "Канада";
+  if (lat < 35 && lng > -110) return "Мексика";
+  return "США";
+}
+
+function getSouthAmericanCountry(lat, lng) {
+  const countries = ["Бразилия", "Аргентина", "Чили", "Перу", "Колумбия", "Венесуэла"];
+  return countries[Math.floor(Math.random() * countries.length)];
+}
+
+function getEuropeanCountry(lat, lng) {
+  if (lat > 45 && lng < 10) return "Франция";
+  if (lat > 45 && lng >= 10) return "Германия";
+  if (lat < 45 && lng < 20) return "Испания";
+  if (lat < 45 && lng >= 20) return "Италия";
+  return "Европа";
+}
+
+function getAsianCountry(lat, lng) {
+  if (lat > 35 && lng < 100) return "Китай";
+  if (lat > 35 && lng >= 100) return "Россия";
+  if (lat < 35 && lng < 100) return "Индия";
+  return "Азия";
+}
+
+function getAfricanCountry(lat, lng) {
+  if (lat > 0 && lng < 20) return "Нигерия";
+  if (lat > 0 && lng >= 20) return "Эфиопия";
+  if (lat < 0) return "ЮАР";
+  return "Африка";
 }
