@@ -3,6 +3,7 @@ class HistoricalPollutionMap {
   constructor() {
     this.currentYear = 2024;
     this.currentDataType = 'air'; // 'air' или 'water'
+    this.currentMarkers = [];
     this.initMap();
   }
   
@@ -52,11 +53,17 @@ class HistoricalPollutionMap {
   }
   
   setupEventListeners() {
-    document.getElementById('yearSlider').addEventListener('input', (e) => {
-      this.currentYear = parseInt(e.target.value);
-      document.getElementById('currentYearDisplay').textContent = this.currentYear;
-      this.loadDataForYear(this.currentYear);
-    });
+    const yearSlider = document.getElementById('yearSlider');
+    if (yearSlider) {
+      yearSlider.addEventListener('input', (e) => {
+        this.currentYear = parseInt(e.target.value);
+        const yearDisplay = document.getElementById('currentYearDisplay');
+        if (yearDisplay) {
+          yearDisplay.textContent = this.currentYear;
+        }
+        this.loadDataForYear(this.currentYear);
+      });
+    }
     
     document.querySelectorAll('.data-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -70,21 +77,27 @@ class HistoricalPollutionMap {
   
   async loadDataForYear(year) {
     try {
+      console.log(`Loading ${this.currentDataType} data for year: ${year}`);
       const response = await fetch(`/.netlify/functions/historical-${this.currentDataType}?year=${year}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log(`Loaded ${this.currentDataType} data:`, data);
       this.renderDataOnMap(data);
+      this.updateStats(data);
     } catch (error) {
       console.error('Error loading data:', error);
+      // Показываем сообщение об ошибке
+      this.showError('Ошибка загрузки данных. Попробуйте позже.');
     }
   }
   
   renderDataOnMap(data) {
     // Очищаем предыдущие маркеры
-    if (this.currentMarkers) {
-      this.currentMarkers.forEach(marker => this.map.removeLayer(marker));
-    }
-    
-    this.currentMarkers = [];
+    this.clearMarkers();
     
     if (this.currentDataType === 'air') {
       this.renderAirQuality(data);
@@ -93,30 +106,47 @@ class HistoricalPollutionMap {
     }
   }
   
+  clearMarkers() {
+    if (this.currentMarkers && this.currentMarkers.length > 0) {
+      this.currentMarkers.forEach(marker => {
+        if (marker && this.map.hasLayer(marker)) {
+          this.map.removeLayer(marker);
+        }
+      });
+      this.currentMarkers = [];
+    }
+  }
+  
   renderAirQuality(airData) {
-    // Добавляем маркеры качества воздуха для основных городов
-    const cities = [
-      { lat: 55.7558, lng: 37.6176, name: "Москва" },
-      { lat: 59.9343, lng: 30.3351, name: "Санкт-Петербург" },
-      { lat: 56.3269, lng: 44.0056, name: "Нижний Новгород" },
-      // Добавь больше городов...
-    ];
+    if (!airData.data || !Array.isArray(airData.data)) {
+      console.error('Invalid air data format:', airData);
+      return;
+    }
     
-    cities.forEach(city => {
-      const marker = L.circleMarker([city.lat, city.lng], {
-        radius: 15,
-        fillColor: this.getAirQualityColor(airData.quality),
+    airData.data.forEach(station => {
+      if (!station.coordinates || !station.measurements) return;
+      
+      const pm25Value = station.measurements.find(m => m.parameter === 'pm25')?.value || 0;
+      const quality = this.getAirQualityByValue(pm25Value);
+      
+      const marker = L.circleMarker([station.coordinates.latitude, station.coordinates.longitude], {
+        radius: this.getMarkerSize(pm25Value),
+        fillColor: this.getAirQualityColor(quality),
         color: '#000',
         weight: 1,
-        opacity: 1,
-        fillOpacity: 0.8
+        opacity: 0.8,
+        fillOpacity: 0.7
       }).addTo(this.map);
       
       marker.bindPopup(`
-        <strong>${city.name}</strong><br>
-        Год: ${this.currentYear}<br>
-        Качество воздуха: ${this.getAirQualityText(airData.quality)}<br>
-        CO₂: ${airData.co2} ppm
+        <div style="min-width: 200px;">
+          <strong>${station.location}</strong><br>
+          <strong>Город:</strong> ${station.city}<br>
+          <strong>Год:</strong> ${this.currentYear}<br>
+          <strong>PM2.5:</strong> ${pm25Value} µg/m³<br>
+          <strong>Качество:</strong> ${this.getAirQualityText(quality)}<br>
+          ${airData.globalParameters ? `<strong>CO₂:</strong> ${airData.globalParameters.co2} ppm` : ''}
+        </div>
       `);
       
       this.currentMarkers.push(marker);
@@ -124,24 +154,50 @@ class HistoricalPollutionMap {
   }
   
   renderWaterQuality(waterData) {
+    if (!waterData.points || !Array.isArray(waterData.points)) {
+      console.error('Invalid water data format:', waterData);
+      return;
+    }
+    
     waterData.points.forEach(point => {
       const marker = L.circleMarker([point.lat, point.lng], {
-        radius: 10,
+        radius: this.getMarkerSize(point.pollution),
         fillColor: this.getWaterQualityColor(point.pollution),
         color: '#000',
         weight: 1,
-        opacity: 1,
-        fillOpacity: 0.8
+        opacity: 0.8,
+        fillOpacity: 0.7
       }).addTo(this.map);
       
       marker.bindPopup(`
-        <strong>${point.name}</strong><br>
-        Год: ${waterData.year}<br>
-        Уровень загрязнения: ${point.pollution.toFixed(1)}%
+        <div style="min-width: 200px;">
+          <strong>${point.name}</strong><br>
+          <strong>Год:</strong> ${waterData.year}<br>
+          <strong>Загрязнение:</strong> ${point.pollution.toFixed(1)}%<br>
+          <strong>Качество:</strong> ${this.getWaterQualityText(point.pollution)}<br>
+          ${point.country ? `<strong>Страна:</strong> ${point.country}` : ''}
+        </div>
       `);
       
       this.currentMarkers.push(marker);
     });
+  }
+  
+  getMarkerSize(value) {
+    // Размер маркера в зависимости от значения
+    if (this.currentDataType === 'air') {
+      return Math.max(5, Math.min(20, value / 3));
+    } else {
+      return Math.max(5, Math.min(15, value / 6));
+    }
+  }
+  
+  getAirQualityByValue(pm25) {
+    if (pm25 <= 12) return 'excellent';
+    if (pm25 <= 35) return 'good';
+    if (pm25 <= 55) return 'moderate';
+    if (pm25 <= 150) return 'poor';
+    return 'very-poor';
   }
   
   getAirQualityColor(quality) {
@@ -173,9 +229,89 @@ class HistoricalPollutionMap {
     };
     return texts[quality] || 'Неизвестно';
   }
+  
+  getWaterQualityText(pollution) {
+    if (pollution < 20) return 'Отличное';
+    if (pollution < 40) return 'Хорошее';
+    if (pollution < 60) return 'Умеренное';
+    if (pollution < 80) return 'Плохое';
+    return 'Очень плохое';
+  }
+  
+  updateStats(data) {
+    // Обновляем статистику на странице
+    const statsYear = document.getElementById('statsYear');
+    if (statsYear) {
+      statsYear.textContent = this.currentYear;
+    }
+    
+    if (this.currentDataType === 'air') {
+      this.updateAirStats(data);
+    } else {
+      this.updateWaterStats(data);
+    }
+    
+    // Переключаем видимость блоков статистики
+    this.toggleStatsVisibility();
+  }
+  
+  updateAirStats(airData) {
+    const co2Value = document.getElementById('co2Value');
+    const so2Value = document.getElementById('so2Value');
+    const no2Value = document.getElementById('no2Value');
+    
+    if (airData.globalParameters) {
+      if (co2Value) co2Value.textContent = airData.globalParameters.co2;
+      if (so2Value) so2Value.textContent = airData.globalParameters.so2;
+      if (no2Value) no2Value.textContent = airData.globalParameters.no2;
+    }
+  }
+  
+  updateWaterStats(waterData) {
+    const waterStationsCount = document.getElementById('waterStationsCount');
+    const avgWaterPollution = document.getElementById('avgWaterPollution');
+    
+    if (waterStationsCount) waterStationsCount.textContent = waterData.totalPoints || waterData.points.length;
+    if (avgWaterPollution && waterData.averagePollution) {
+      avgWaterPollution.textContent = waterData.averagePollution.toFixed(1);
+    }
+  }
+  
+  toggleStatsVisibility() {
+    const airStats = document.getElementById('airStats');
+    const waterStats = document.getElementById('waterStats');
+    const airLegend = document.getElementById('airLegend');
+    const waterLegend = document.getElementById('waterLegend');
+    
+    if (airStats && waterStats && airLegend && waterLegend) {
+      if (this.currentDataType === 'air') {
+        airStats.style.display = 'block';
+        waterStats.style.display = 'none';
+        airLegend.style.display = 'block';
+        waterLegend.style.display = 'none';
+      } else {
+        airStats.style.display = 'none';
+        waterStats.style.display = 'block';
+        airLegend.style.display = 'none';
+        waterLegend.style.display = 'block';
+      }
+    }
+  }
+  
+  showError(message) {
+    // Показываем сообщение об ошибке (можно реализовать toast или alert)
+    console.error('Map Error:', message);
+    // Можно добавить красивый toast вместо alert
+    alert(message);
+  }
 }
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
-  window.historicalMap = new HistoricalPollutionMap();
+  // Проверяем, существует ли элемент карты
+  if (document.getElementById('pollutionMap')) {
+    window.historicalMap = new HistoricalPollutionMap();
+  } else {
+    console.error('Map container #pollutionMap not found');
+  }
 });
