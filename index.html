@@ -40,34 +40,191 @@
             </div>
             <div id="map"></div>
         </section>
+
+        <!-- Секция исторического загрязнения -->
+        <section id="historical-pollution" class="historical-section">
+            <h2>📊 Историческое загрязнение (1800-2024)</h2>
+            <div class="historical-controls">
+                <div class="time-controls">
+                    <label>Год: <span id="currentYearDisplay">2024</span></label>
+                    <input type="range" id="yearSlider" min="1800" max="2024" value="2024" class="timeline-slider">
+                </div>
+                <div class="data-type-buttons">
+                    <button class="data-btn active" data-type="air">🌤️ Воздух</button>
+                    <button class="data-btn" data-type="water">🌊 Вода</button>
+                </div>
+            </div>
+            <div id="pollutionMap" style="height: 500px; margin: 20px 0; border-radius: 10px;"></div>
+            <div class="pollution-info">
+                <div id="pollutionStats" class="stats-card">
+                    <h4>Статистика за <span id="statsYear">2024</span> год</h4>
+                    <div id="airStats" class="stats-content">
+                        <p>CO₂: <span id="co2Value">420</span> ppm</p>
+                        <p>SO₂: <span id="so2Value">60</span> µg/m³</p>
+                        <p>NO₂: <span id="no2Value">50</span> µg/m³</p>
+                    </div>
+                    <div id="waterStats" class="stats-content" style="display: none;">
+                        <p>Станций мониторинга: <span id="waterStationsCount">70</span></p>
+                        <p>Среднее загрязнение: <span id="avgWaterPollution">35</span>%</p>
+                    </div>
+                </div>
+                <div class="legend">
+                    <h4>Легенда</h4>
+                    <div id="airLegend">
+                        <div class="legend-item">
+                            <span class="color-box air-excellent"></span>
+                            <span>Отличное (0-12 µg/m³)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="color-box air-good"></span>
+                            <span>Хорошее (12-35 µg/m³)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="color-box air-moderate"></span>
+                            <span>Умеренное (35-55 µg/m³)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="color-box air-poor"></span>
+                            <span>Плохое (55-150 µg/m³)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="color-box air-very-poor"></span>
+                            <span>Очень плохое (150+ µg/m³)</span>
+                        </div>
+                    </div>
+                    <div id="waterLegend" style="display: none;">
+                        <div class="legend-item">
+                            <span class="color-box water-clean"></span>
+                            <span>Чистая (0-20%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="color-box water-moderate"></span>
+                            <span>Умеренная (20-40%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="color-box water-polluted"></span>
+                            <span>Загрязненная (40-60%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="color-box water-heavy-polluted"></span>
+                            <span>Сильно загрязненная (60%+)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Секция последствий загрязнения -->
+        <section class="pollution-impact">
+            <h2>💔 Последствия загрязнения окружающей среды</h2>
+            <div class="impact-stats">
+                <div class="impact-card">
+                    <h3>🐾 Погибшие животные</h3>
+                    <div class="counter" id="animalDeaths">1.5 млн</div>
+                    <p>в год из-за загрязнения окружающей среды</p>
+                    <div class="impact-details">
+                        <p>• 1 млн морских птиц</p>
+                        <p>• 100 тыс морских млекопитающих</p>
+                        <p>• 400 тыс других животных</p>
+                    </div>
+                </div>
+                <div class="impact-card">
+                    <h3>👥 Погибшие люди</h3>
+                    <div class="counter" id="humanDeaths">9 млн</div>
+                    <p>в год от болезней, связанных с загрязнением</p>
+                    <div class="impact-details">
+                        <p>• 4.2 млн от загрязнения воздуха</p>
+                        <p>• 2.2 млн от загрязнения воды</p>
+                        <p>• 2.6 млн от других загрязнений</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Секция калькулятора сохранения ресурсов -->
+        <section class="recycling-calculator">
+            <h2>🌱 Калькулятор сохранения ресурсов</h2>
+            <div class="calc-tabs">
+                <button class="calc-tab active" onclick="showRecyclingTab('general')">♻️ Общий расчет</button>
+                <button class="calc-tab" onclick="showRecyclingTab('batteries')">🔋 Батарейки</button>
+                <button class="calc-tab" onclick="showRecyclingTab('bottles')">🥤 Бутылки</button>
+            </div>
+
+            <div id="generalRecycling" class="recycling-form active">
+                <div class="input-group">
+                    <label>📄 Макулатура (кг):</label>
+                    <input type="number" id="paperWaste" placeholder="Введите кг" min="0">
+                </div>
+                <div class="input-group">
+                    <label>🥤 Пластик (кг):</label>
+                    <input type="number" id="plasticWaste" placeholder="Введите кг" min="0">
+                </div>
+                <div class="input-group">
+                    <label>🍶 Стекло (кг):</label>
+                    <input type="number" id="glassWaste" placeholder="Введите кг" min="0">
+                </div>
+                <div class="input-group">
+                    <label>🔩 Металл (кг):</label>
+                    <input type="number" id="metalWaste" placeholder="Введите кг" min="0">
+                </div>
+                <button onclick="calculateResourceSavings()">Рассчитать сохраненные ресурсы</button>
+            </div>
+
+            <div id="batteriesRecycling" class="recycling-form">
+                <div class="input-group">
+                    <label>🔋 Количество батареек (шт):</label>
+                    <input type="number" id="batteriesCount" placeholder="Введите количество" min="0">
+                </div>
+                <div class="battery-info">
+                    <p>💡 1 батарейка загрязняет 20 м² земли и 400 л воды</p>
+                </div>
+                <button onclick="calculateBatteriesSavings()">Рассчитать экологический эффект</button>
+            </div>
+
+            <div id="bottlesRecycling" class="recycling-form">
+                <div class="input-group">
+                    <label>🥤 Пластиковые бутылки (шт):</label>
+                    <input type="number" id="plasticBottles" placeholder="Введите количество" min="0">
+                </div>
+                <div class="input-group">
+                    <label>🍶 Стеклянные бутылки (шт):</label>
+                    <input type="number" id="glassBottles" placeholder="Введите количество" min="0">
+                </div>
+                <div class="input-group">
+                    <label>🥫 Алюминиевые банки (шт):</label>
+                    <input type="number" id="aluminumCans" placeholder="Введите количество" min="0">
+                </div>
+                <button onclick="calculateBottlesSavings()">Рассчитать экономию ресурсов</button>
+            </div>
+
+            <div id="recyclingResult" class="result savings-result"></div>
+        </section>
+
+        <!-- Секция калькулятора углеродного следа -->
         <section class="calculator">
-    <h2>🌍 Калькулятор углеродного следа</h2>
-    
-    <div class="calc-form">
-        <div class="input-group">
-            <label>🚗 Пробег на автомобиле в месяц (км):</label>
-            <input type="number" id="carKm" placeholder="Введите километры">
-        </div>
-        
-        <div class="input-group">
-            <label>💡 Потребление электроэнергии в месяц (кВт·ч):</label>
-            <input type="number" id="electricity" placeholder="Введите кВт·ч">
-        </div>
-        
-        <div class="input-group">
-            <label>✈️ Количество перелетов в год:</label>
-            <input type="number" id="flights" placeholder="Введите количество перелетов">
-        </div>
-        
-        <button onclick="calculateCarbonFootprint()">Рассчитать углеродный след</button>
-        
-        <div id="carbonResult" class="result"></div>
-    </div>
-</section>
+            <h2>🌍 Калькулятор углеродного следа</h2>
+            <div class="calc-form">
+                <div class="input-group">
+                    <label>🚗 Пробег на автомобиле в месяц (км):</label>
+                    <input type="number" id="carKm" placeholder="Введите километры">
+                </div>
+                <div class="input-group">
+                    <label>💡 Потребление электроэнергии в месяц (кВт·ч):</label>
+                    <input type="number" id="electricity" placeholder="Введите кВт·ч">
+                </div>
+                <div class="input-group">
+                    <label>✈️ Количество перелетов в год:</label>
+                    <input type="number" id="flights" placeholder="Введите количество перелетов">
+                </div>
+                <button onclick="calculateCarbonFootprint()">Рассчитать углеродный след</button>
+                <div id="carbonResult" class="result"></div>
+            </div>
+        </section>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="app.js"></script>
     <script src="calculator.js"></script>
+    <script src="historical-map.js"></script>
 </body>
 </html>
