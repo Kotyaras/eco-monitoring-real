@@ -1,0 +1,112 @@
+// functions/historical-water.js
+exports.handler = async function(event, context) {
+  const { year = 2024 } = event.queryStringParameters;
+  
+  const waterData = generateHistoricalWaterData(parseInt(year));
+  
+  return {
+    statusCode: 200,
+    headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+    body: JSON.stringify(waterData)
+  };
+};
+
+function generateHistoricalWaterData(year) {
+  const waterPoints = [
+    // Россия и СНГ (15 точек)
+    { lat: 55.7558, lng: 37.6176, pollution: Math.min(100, 12 + (year - 1800) * 0.22), name: "Москва-река" },
+    { lat: 59.9343, lng: 30.3351, pollution: Math.min(100, 8 + (year - 1800) * 0.18), name: "Нева" },
+    { lat: 56.3269, lng: 44.0056, pollution: Math.min(100, 15 + (year - 1800) * 0.25), name: "Волга" },
+    { lat: 55.0302, lng: 82.9204, pollution: Math.min(100, 10 + (year - 1800) * 0.2), name: "Обь" },
+    { lat: 56.8389, lng: 60.6057, pollution: Math.min(100, 18 + (year - 1800) * 0.28), name: "Исеть" },
+    { lat: 54.9833, lng: 73.3667, pollution: Math.min(100, 14 + (year - 1800) * 0.23), name: "Иртыш" },
+    { lat: 52.2833, lng: 104.2833, pollution: Math.min(100, 9 + (year - 1800) * 0.17), name: "Ангара" },
+    { lat: 43.5855, lng: 39.7231, pollution: Math.min(100, 20 + (year - 1800) * 0.3), name: "Черное море" },
+    { lat: 45.3500, lng: 36.4667, pollution: Math.min(100, 22 + (year - 1800) * 0.32), name: "Азовское море" },
+    { lat: 42.9833, lng: 47.4833, pollution: Math.min(100, 25 + (year - 1800) * 0.35), name: "Каспийское море" },
+    { lat: 50.4500, lng: 30.5233, pollution: Math.min(100, 16 + (year - 1800) * 0.26), name: "Днепр" },
+    { lat: 53.9000, lng: 27.5667, pollution: Math.min(100, 13 + (year - 1800) * 0.21), name: "Свислочь" },
+    { lat: 43.2500, lng: 76.9500, pollution: Math.min(100, 19 + (year - 1800) * 0.29), name: "Или" },
+    { lat: 41.3111, lng: 69.2797, pollution: Math.min(100, 24 + (year - 1800) * 0.34), name: "Сырдарья" },
+    { lat: 47.0667, lng: 51.8667, pollution: Math.min(100, 28 + (year - 1800) * 0.38), name: "Урал" },
+
+    // Европа (15 точек)
+    { lat: 48.8566, lng: 2.3522, pollution: Math.min(100, 15 + (year - 1800) * 0.27), name: "Сена" },
+    { lat: 51.5074, lng: -0.1278, pollution: Math.min(100, 22 + (year - 1800) * 0.33), name: "Темза" },
+    { lat: 52.5200, lng: 13.4050, pollution: Math.min(100, 18 + (year - 1800) * 0.29), name: "Шпрее" },
+    { lat: 41.9028, lng: 12.4964, pollution: Math.min(100, 20 + (year - 1800) * 0.31), name: "Тибр" },
+    { lat: 50.8503, lng: 4.3517, pollution: Math.min(100, 16 + (year - 1800) * 0.26), name: "Сенна" },
+    { lat: 52.3676, lng: 4.9041, pollution: Math.min(100, 14 + (year - 1800) * 0.24), name: "Амстел" },
+    { lat: 47.4979, lng: 19.0402, pollution: Math.min(100, 17 + (year - 1800) * 0.28), name: "Дунай" },
+    { lat: 55.6761, lng: 12.5683, pollution: Math.min(100, 11 + (year - 1800) * 0.19), name: "Эресунн" },
+    { lat: 59.3293, lng: 18.0686, pollution: Math.min(100, 9 + (year - 1800) * 0.16), name: "Меларен" },
+    { lat: 60.1699, lng: 24.9384, pollution: Math.min(100, 8 + (year - 1800) * 0.15), name: "Вантаа" },
+    { lat: 50.0755, lng: 14.4378, pollution: Math.min(100, 19 + (year - 1800) * 0.3), name: "Влтава" },
+    { lat: 38.7223, lng: -9.1393, pollution: Math.min(100, 13 + (year - 1800) * 0.22), name: "Тахо" },
+    { lat: 53.3498, lng: -6.2603, pollution: Math.min(100, 10 + (year - 1800) * 0.18), name: "Лиффи" },
+    { lat: 45.4408, lng: 12.3155, pollution: Math.min(100, 25 + (year - 1800) * 0.36), name: "Венецианская лагуна" },
+    { lat: 43.7696, lng: 11.2558, pollution: Math.min(100, 12 + (year - 1800) * 0.2), name: "Арно" },
+
+    // Северная Америка (15 точек)
+    { lat: 40.7128, lng: -74.0060, pollution: Math.min(100, 30 + (year - 1800) * 0.4), name: "Гудзон" },
+    { lat: 41.8781, lng: -87.6298, pollution: Math.min(100, 35 + (year - 1800) * 0.45), name: "Мичиган" },
+    { lat: 34.0522, lng: -118.2437, pollution: Math.min(100, 28 + (year - 1800) * 0.38), name: "Лос-Анджелес" },
+    { lat: 37.7749, lng: -122.4194, pollution: Math.min(100, 26 + (year - 1800) * 0.36), name: "Сан-Франциско" },
+    { lat: 45.5152, lng: -122.6784, pollution: Math.min(100, 20 + (year - 1800) * 0.32), name: "Уилламетт" },
+    { lat: 39.9526, lng: -75.1652, pollution: Math.min(100, 32 + (year - 1800) * 0.42), name: "Делавэр" },
+    { lat: 38.9072, lng: -77.0369, pollution: Math.min(100, 24 + (year - 1800) * 0.34), name: "Потомак" },
+    { lat: 29.7604, lng: -95.3698, pollution: Math.min(100, 38 + (year - 1800) * 0.48), name: "Хьюстон" },
+    { lat: 43.6532, lng: -79.3832, pollution: Math.min(100, 22 + (year - 1800) * 0.33), name: "Онтарио" },
+    { lat: 49.2827, lng: -123.1207, pollution: Math.min(100, 18 + (year - 1800) * 0.29), name: "Ванкувер" },
+    { lat: 45.5017, lng: -73.5673, pollution: Math.min(100, 21 + (year - 1800) * 0.32), name: "Св. Лаврентия" },
+    { lat: 19.4326, lng: -99.1332, pollution: Math.min(100, 40 + (year - 1800) * 0.5), name: "Мехико" },
+    { lat: 23.6345, lng: -102.5528, pollution: Math.min(100, 25 + (year - 1800) * 0.35), name: "Насас" },
+    { lat: 17.0732, lng: -96.7266, pollution: Math.min(100, 19 + (year - 1800) * 0.3), name: "Атояк" },
+    { lat: 9.9281, lng: -84.0907, pollution: Math.min(100, 16 + (year - 1800) * 0.26), name: "Тарколес" },
+
+    // Южная Америка (10 точек)
+    { lat: -23.5505, lng: -46.6333, pollution: Math.min(100, 35 + (year - 1800) * 0.45), name: "Тиете" },
+    { lat: -34.6037, lng: -58.3816, pollution: Math.min(100, 32 + (year - 1800) * 0.42), name: "Ла-Плата" },
+    { lat: -12.0464, lng: -77.0428, pollution: Math.min(100, 38 + (year - 1800) * 0.48), name: "Римак" },
+    { lat: -3.1190, lng: -60.0217, pollution: Math.min(100, 28 + (year - 1800) * 0.38), name: "Амазонка" },
+    { lat: -15.7975, lng: -47.8919, pollution: Math.min(100, 30 + (year - 1800) * 0.4), name: "Параноа" },
+    { lat: -33.4489, lng: -70.6693, pollution: Math.min(100, 26 + (year - 1800) * 0.36), name: "Мапочо" },
+    { lat: -0.1807, lng: -78.4678, pollution: Math.min(100, 24 + (year - 1800) * 0.34), name: "Махо" },
+    { lat: -8.7669, lng: -63.9039, pollution: Math.min(100, 22 + (year - 1800) * 0.32), name: "Мадейра" },
+    { lat: -16.4897, lng: -68.1193, pollution: Math.min(100, 20 + (year - 1800) * 0.3), name: "Титикака" },
+    { lat: -34.9011, lng: -56.1645, pollution: Math.min(100, 18 + (year - 1800) * 0.28), name: "Уругвай" },
+
+    // Азия (10 точек)
+    { lat: 35.6762, lng: 139.6503, pollution: Math.min(100, 42 + (year - 1800) * 0.52), name: "Сумида" },
+    { lat: 39.9042, lng: 116.4074, pollution: Math.min(100, 45 + (year - 1800) * 0.55), name: "Хайхэ" },
+    { lat: 37.5665, lng: 126.9780, pollution: Math.min(100, 40 + (year - 1800) * 0.5), name: "Ханган" },
+    { lat: 22.3193, lng: 114.1694, pollution: Math.min(100, 38 + (year - 1800) * 0.48), name: "Виктория" },
+    { lat: 13.7563, lng: 100.5018, pollution: Math.min(100, 35 + (year - 1800) * 0.45), name: "Чао-Прая" },
+    { lat: 1.3521, lng: 103.8198, pollution: Math.min(100, 25 + (year - 1800) * 0.35), name: "Сингапур" },
+    { lat: 14.5995, lng: 120.9842, pollution: Math.min(100, 32 + (year - 1800) * 0.42), name: "Пасиг" },
+    { lat: 21.0278, lng: 105.8342, pollution: Math.min(100, 30 + (year - 1800) * 0.4), name: "Хонгха" },
+    { lat: 23.8103, lng: 90.4125, pollution: Math.min(100, 48 + (year - 1800) * 0.58), name: "Буриганга" },
+    { lat: 28.6139, lng: 77.2090, pollution: Math.min(100, 50 + (year - 1800) * 0.6), name: "Ямуна" },
+
+    // Африка (5 точек)
+    { lat: -33.9249, lng: 18.4241, pollution: Math.min(100, 28 + (year - 1800) * 0.38), name: "Кейптаун" },
+    { lat: 30.0444, lng: 31.2357, pollution: Math.min(100, 45 + (year - 1800) * 0.55), name: "Нил" },
+    { lat: 6.5244, lng: 3.3792, pollution: Math.min(100, 40 + (year - 1800) * 0.5), name: "Лагос" },
+    { lat: -1.2921, lng: 36.8219, pollution: Math.min(100, 35 + (year - 1800) * 0.45), name: "Найроби" },
+    { lat: -26.2041, lng: 28.0473, pollution: Math.min(100, 32 + (year - 1800) * 0.42), name: "Йоханнесбург" },
+
+    // Австралия и Океания (5 точек)
+    { lat: -33.8688, lng: 151.2093, pollution: Math.min(100, 22 + (year - 1800) * 0.32), name: "Сидней" },
+    { lat: -37.8136, lng: 144.9631, pollution: Math.min(100, 20 + (year - 1800) * 0.3), name: "Ярра" },
+    { lat: -41.2865, lng: 174.7762, pollution: Math.min(100, 15 + (year - 1800) * 0.25), name: "Веллингтон" },
+    { lat: -36.8485, lng: 174.7633, pollution: Math.min(100, 18 + (year - 1800) * 0.28), name: "Окленд" },
+    { lat: -31.9505, lng: 115.8605, pollution: Math.min(100, 16 + (year - 1800) * 0.26), name: "Суон" }
+  ];
+  
+  return { 
+    year, 
+    points: waterPoints,
+    totalPoints: waterPoints.length,
+    description: `Данные о загрязнении воды за ${year} год`
+  };
+}
