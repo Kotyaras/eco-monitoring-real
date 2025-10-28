@@ -87,15 +87,20 @@ class HistoricalPollutionMap {
             { name: "Санкт-Петербург", lat: 59.9343, lng: 30.3351, country: "Россия" },
             { name: "Новосибирск", lat: 55.0084, lng: 82.9357, country: "Россия" },
             { name: "Екатеринбург", lat: 56.8389, lng: 60.6057, country: "Россия" },
-            { name: "Казань", lat: 55.7961, lng: 49.1064, country: "Россия" }
+            { name: "Казань", lat: 55.7961, lng: 49.1064, country: "Россия" },
+            { name: "Нижний Новгород", lat: 56.3269, lng: 44.0065, country: "Россия" },
+            { name: "Киев", lat: 50.4501, lng: 30.5234, country: "Украина" },
+            { name: "Минск", lat: 53.9045, lng: 27.5615, country: "Беларусь" },
+            { name: "Астана", lat: 51.1694, lng: 71.4491, country: "Казахстан" }
         ];
 
         const data = cities.map(city => {
+            // Уровень загрязнения зависит от года (увеличивается со временем)
             const yearFactor = (year - 1800) / (2024 - 1800);
-            const basePM25 = 5 + yearFactor * 45;
-            const randomFactor = 0.7 + Math.random() * 0.6;
+            const basePM25 = 5 + yearFactor * 45; // от 5 до 50 µg/m³
+            const randomFactor = 0.7 + Math.random() * 0.6; // случайный фактор
             const pm25 = Math.round(basePM25 * randomFactor);
-
+            
             return {
                 coordinates: { latitude: city.lat, longitude: city.lng },
                 location: city.name,
@@ -108,11 +113,11 @@ class HistoricalPollutionMap {
                 ]
             };
         });
-
+        
         return {
             data: data,
             globalParameters: {
-                co2: 280 + Math.round((year - 1800) * 0.67),
+                co2: 280 + Math.round((year - 1800) * 0.67), // CO2 от 280 до 420 ppm
                 so2: 5 + Math.round((year - 1800) * 0.23),
                 no2: 3 + Math.round((year - 1800) * 0.19)
             }
@@ -120,29 +125,33 @@ class HistoricalPollutionMap {
     }
 
     getMockWaterData(year) {
+        // Генерируем фиктивные данные о качестве воды
         const points = [
             { name: "Волга", lat: 56.1309, lng: 44.0002, country: "Россия" },
             { name: "Днепр", lat: 50.4501, lng: 30.5234, country: "Украина" },
             { name: "Дон", lat: 47.2226, lng: 39.7187, country: "Россия" },
-            { name: "Обь", lat: 55.0113, lng: 82.9346, country: "Россия" }
+            { name: "Обь", lat: 55.0113, lng: 82.9346, country: "Россия" },
+            { name: "Енисей", lat: 55.9940, lng: 92.7974, country: "Россия" },
+            { name: "Лена", lat: 60.7233, lng: 114.9647, country: "Россия" }
         ];
-
+        
         const data = points.map(point => {
             const yearFactor = (year - 1800) / (2024 - 1800);
-            const basePollution = 5 + yearFactor * 30;
+            const basePollution = 5 + yearFactor * 30; // от 5% до 35%
             const randomFactor = 0.8 + Math.random() * 0.4;
             const pollution = basePollution * randomFactor;
-
+            
             return {
                 ...point,
                 pollution: pollution,
                 year: year
             };
         });
-
+        
+        // Вычисляем среднее загрязнение
         const totalPollution = data.reduce((sum, point) => sum + point.pollution, 0);
         const averagePollution = totalPollution / data.length;
-
+        
         return {
             points: data,
             year: year,
@@ -152,6 +161,7 @@ class HistoricalPollutionMap {
     }
 
     renderDataOnMap(data) {
+        // Очищаем предыдущие маркеры
         this.clearMarkers();
         
         if (this.currentDataType === 'air') {
@@ -173,14 +183,17 @@ class HistoricalPollutionMap {
     }
 
     renderAirQuality(airData) {
-        if (!airData.data || !Array.isArray(airData.data)) return;
-
+        if (!airData.data || !Array.isArray(airData.data)) {
+            console.error('Неверный формат данных о воздухе:', airData);
+            return;
+        }
+        
         airData.data.forEach(station => {
-            if (!station.coordinates) return;
-
+            if (!station.coordinates || !station.measurements) return;
+            
             const pm25Value = station.measurements.find(m => m.parameter === 'pm25')?.value || 0;
             const quality = this.getAirQualityByValue(pm25Value);
-
+            
             const marker = L.circleMarker([station.coordinates.latitude, station.coordinates.longitude], {
                 radius: 15,
                 fillColor: this.getAirQualityColor(quality),
@@ -189,23 +202,29 @@ class HistoricalPollutionMap {
                 opacity: 0.8,
                 fillOpacity: 0.7
             }).addTo(this.map);
-
+            
             marker.bindPopup(`
                 <div style="min-width: 200px;">
                     <strong>${station.location}</strong><br>
+                    <strong>Город:</strong> ${station.city}<br>
+                    <strong>Страна:</strong> ${station.country}<br>
                     <strong>Год:</strong> ${this.currentYear}<br>
                     <strong>PM2.5:</strong> ${pm25Value} µg/m³<br>
-                    <strong>Качество:</strong> ${this.getAirQualityText(quality)}
+                    <strong>Качество:</strong> ${this.getAirQualityText(quality)}<br>
+                    ${airData.globalParameters ? `<strong>Глобальный CO₂:</strong> ${airData.globalParameters.co2} ppm` : ''}
                 </div>
             `);
-
+            
             this.currentMarkers.push(marker);
         });
     }
 
     renderWaterQuality(waterData) {
-        if (!waterData.points || !Array.isArray(waterData.points)) return;
-
+        if (!waterData.points || !Array.isArray(waterData.points)) {
+            console.error('Неверный формат данных о воде:', waterData);
+            return;
+        }
+        
         waterData.points.forEach(point => {
             const marker = L.circleMarker([point.lat, point.lng], {
                 radius: 12,
@@ -215,16 +234,17 @@ class HistoricalPollutionMap {
                 opacity: 0.8,
                 fillOpacity: 0.7
             }).addTo(this.map);
-
+            
             marker.bindPopup(`
                 <div style="min-width: 200px;">
                     <strong>${point.name}</strong><br>
-                    <strong>Год:</strong> ${this.currentYear}<br>
+                    <strong>Год:</strong> ${waterData.year}<br>
                     <strong>Загрязнение:</strong> ${point.pollution.toFixed(1)}%<br>
-                    <strong>Качество:</strong> ${this.getWaterQualityText(point.pollution)}
+                    <strong>Качество:</strong> ${this.getWaterQualityText(point.pollution)}<br>
+                    ${point.country ? `<strong>Страна:</strong> ${point.country}` : ''}
                 </div>
             `);
-
+            
             this.currentMarkers.push(marker);
         });
     }
@@ -274,17 +294,19 @@ class HistoricalPollutionMap {
     }
 
     updateStats(data) {
+        // Обновляем статистику на странице
         const statsYear = document.getElementById('statsYear');
         if (statsYear) {
             statsYear.textContent = this.currentYear;
         }
-
+        
         if (this.currentDataType === 'air') {
             this.updateAirStats(data);
         } else {
             this.updateWaterStats(data);
         }
-
+        
+        // Переключаем видимость блоков статистики
         this.toggleStatsVisibility();
     }
 
@@ -292,7 +314,7 @@ class HistoricalPollutionMap {
         const co2Value = document.getElementById('co2Value');
         const so2Value = document.getElementById('so2Value');
         const no2Value = document.getElementById('no2Value');
-
+        
         if (airData.globalParameters) {
             if (co2Value) co2Value.textContent = airData.globalParameters.co2;
             if (so2Value) so2Value.textContent = airData.globalParameters.so2;
@@ -303,8 +325,8 @@ class HistoricalPollutionMap {
     updateWaterStats(waterData) {
         const waterStationsCount = document.getElementById('waterStationsCount');
         const avgWaterPollution = document.getElementById('avgWaterPollution');
-
-        if (waterStationsCount) waterStationsCount.textContent = waterData.totalPoints || 0;
+        
+        if (waterStationsCount) waterStationsCount.textContent = waterData.totalPoints || waterData.points.length;
         if (avgWaterPollution && waterData.averagePollution) {
             avgWaterPollution.textContent = waterData.averagePollution.toFixed(1);
         }
@@ -315,17 +337,19 @@ class HistoricalPollutionMap {
         const waterStats = document.getElementById('waterStats');
         const airLegend = document.getElementById('airLegend');
         const waterLegend = document.getElementById('waterLegend');
-
-        if (this.currentDataType === 'air') {
-            if (airStats) airStats.style.display = 'block';
-            if (waterStats) waterStats.style.display = 'none';
-            if (airLegend) airLegend.style.display = 'block';
-            if (waterLegend) waterLegend.style.display = 'none';
-        } else {
-            if (airStats) airStats.style.display = 'none';
-            if (waterStats) waterStats.style.display = 'block';
-            if (airLegend) airLegend.style.display = 'none';
-            if (waterLegend) waterLegend.style.display = 'block';
+        
+        if (airStats && waterStats && airLegend && waterLegend) {
+            if (this.currentDataType === 'air') {
+                airStats.style.display = 'block';
+                waterStats.style.display = 'none';
+                airLegend.style.display = 'block';
+                waterLegend.style.display = 'none';
+            } else {
+                airStats.style.display = 'none';
+                waterStats.style.display = 'block';
+                airLegend.style.display = 'none';
+                waterLegend.style.display = 'block';
+            }
         }
     }
 
@@ -338,6 +362,7 @@ class HistoricalPollutionMap {
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM загружен, инициализация исторической карты...");
     
+    // Проверяем, существует ли элемент карты
     if (document.getElementById('pollutionMap')) {
         try {
             window.historicalMap = new HistoricalPollutionMap();
