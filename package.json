@@ -1,8 +1,15 @@
 {
   "name": "eco-monitoring-real",
   "version": "1.0.0",
+  "type": "module",
   "description": "Сайт мониторинга экологии с реальными API",
   "dependencies": {
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "scripts": {
+    "dev": "vc dev"
   }
 }
