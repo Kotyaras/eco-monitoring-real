@@ -32,6 +32,12 @@ function calculateCarbonFootprint() {
     const electricity = parseFloat(document.getElementById('electricity').value) || 0;
     const flights = parseFloat(document.getElementById('flights').value) || 0;
     
+    // Валидация ввода
+    if (carKm < 0 || electricity < 0 || flights < 0) {
+        alert('Пожалуйста, введите положительные числа');
+        return;
+    }
+    
     const carEmissions = carKm * EMISSION_FACTORS.car * 12;
     const electricityEmissions = electricity * EMISSION_FACTORS.electricity * 12;
     const flightEmissions = flights * EMISSION_FACTORS.flight;
@@ -44,15 +50,21 @@ function calculateCarbonFootprint() {
 function showCarbonResult(total, car, electricity, flight) {
     const resultDiv = document.getElementById('carbonResult');
     
-    const worldPercentage = (total / WORLD_AVERAGE * 100).toFixed(0);
-    const russiaPercentage = (total / RUSSIA_AVERAGE * 100).toFixed(0);
-    const europePercentage = (total / EUROPE_AVERAGE * 100).toFixed(0);
-    const usaPercentage = (total / USA_AVERAGE * 100).toFixed(0);
+    // Защита от деления на ноль
+    const worldPercentage = total > 0 ? (total / WORLD_AVERAGE * 100).toFixed(0) : 0;
+    const russiaPercentage = total > 0 ? (total / RUSSIA_AVERAGE * 100).toFixed(0) : 0;
+    const europePercentage = total > 0 ? (total / EUROPE_AVERAGE * 100).toFixed(0) : 0;
+    const usaPercentage = total > 0 ? (total / USA_AVERAGE * 100).toFixed(0) : 0;
     
     const randomRecommendations = getRandomRecommendations(3);
     
     let comparisonMessage = '';
-    if (total < WORLD_AVERAGE) {
+    if (total === 0) {
+        comparisonMessage = `
+            <p style="color: green;">🎉 Отлично! У вас нулевой углеродный след!</p>
+            <p>Вы - пример для подражания в экологичном образе жизни!</p>
+        `;
+    } else if (total < WORLD_AVERAGE) {
         const savingsPercent = (100 - worldPercentage);
         comparisonMessage = `
             <p style="color: green;">✅ Вы расходуете на <strong>${savingsPercent}% меньше</strong> чем средний житель Земли!</p>
@@ -65,6 +77,11 @@ function showCarbonResult(total, car, electricity, flight) {
             <p>Ваш углеродный след превышает мировой средний на <strong>${(total - WORLD_AVERAGE).toFixed(0)} кг CO₂</strong> в год</p>
         `;
     }
+    
+    // Расчет процентов для детализации (с защитой от деления на ноль)
+    const carPercent = total > 0 ? (car/total*100).toFixed(0) : 0;
+    const electricityPercent = total > 0 ? (electricity/total*100).toFixed(0) : 0;
+    const flightPercent = total > 0 ? (flight/total*100).toFixed(0) : 0;
     
     let message = `
         <h3>Ваш углеродный след: ${total.toFixed(0)} кг CO₂/год</h3>
@@ -82,14 +99,21 @@ function showCarbonResult(total, car, electricity, flight) {
             <li>🇪🇺 Европа: ${europePercentage}% от среднего</li>
             <li>🇺🇸 США: ${usaPercentage}% от среднего</li>
         </ul>
-        
-        <p><strong>📊 Детализация вашего следа:</strong></p>
-        <ul>
-            <li>🚗 Транспорт: ${car.toFixed(0)} кг CO₂ (${(car/total*100).toFixed(0)}%)</li>
-            <li>💡 Энергия: ${electricity.toFixed(0)} кг CO₂ (${(electricity/total*100).toFixed(0)}%)</li>
-            <li>✈️ Перелеты: ${flight.toFixed(0)} кг CO₂ (${(flight/total*100).toFixed(0)}%)</li>
-        </ul>
-        
+    `;
+    
+    // Добавляем детализацию только если есть данные
+    if (total > 0) {
+        message += `
+            <p><strong>📊 Детализация вашего следа:</strong></p>
+            <ul>
+                ${car > 0 ? `<li>🚗 Транспорт: ${car.toFixed(0)} кг CO₂ (${carPercent}%)</li>` : ''}
+                ${electricity > 0 ? `<li>💡 Энергия: ${electricity.toFixed(0)} кг CO₂ (${electricityPercent}%)</li>` : ''}
+                ${flight > 0 ? `<li>✈️ Перелеты: ${flight.toFixed(0)} кг CO₂ (${flightPercent}%)</li>` : ''}
+            </ul>
+        `;
+    }
+    
+    message += `
         <p><strong>💡 Рекомендации для вас:</strong></p>
         <ul>
             ${randomRecommendations.map(rec => `<li>${rec}</li>`).join('')}
@@ -106,6 +130,7 @@ function getRandomRecommendations(count) {
     const shuffled = [...RECOMMENDATIONS].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, count);
 }
+
 // Функции для калькулятора сохранения ресурсов
 function showRecyclingTab(tabName) {
     // Скрыть все формы
@@ -119,8 +144,15 @@ function showRecyclingTab(tabName) {
     });
     
     // Показать выбранную форму и активировать кнопку
-    document.getElementById(tabName + 'Recycling').classList.add('active');
-    event.target.classList.add('active');
+    const targetForm = document.getElementById(tabName + 'Recycling');
+    if (targetForm) {
+        targetForm.classList.add('active');
+    }
+    
+    // event может быть не определен в некоторых случаях
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
 }
 
 function calculateResourceSavings() {
@@ -128,6 +160,18 @@ function calculateResourceSavings() {
     const plastic = parseFloat(document.getElementById('plasticWaste').value) || 0;
     const glass = parseFloat(document.getElementById('glassWaste').value) || 0;
     const metal = parseFloat(document.getElementById('metalWaste').value) || 0;
+
+    // Валидация
+    if (paper < 0 || plastic < 0 || glass < 0 || metal < 0) {
+        alert('Пожалуйста, введите положительные числа');
+        return;
+    }
+
+    // Проверка, что хотя бы одно поле заполнено
+    if (paper === 0 && plastic === 0 && glass === 0 && metal === 0) {
+        alert('Пожалуйста, заполните хотя бы одно поле');
+        return;
+    }
 
     // Коэффициенты сохранения ресурсов
     const savings = {
@@ -144,6 +188,17 @@ function calculateResourceSavings() {
 function calculateBatteriesSavings() {
     const batteries = parseInt(document.getElementById('batteriesCount').value) || 0;
 
+    // Валидация
+    if (batteries < 0) {
+        alert('Пожалуйста, введите положительное число');
+        return;
+    }
+
+    if (batteries === 0) {
+        alert('Пожалуйста, введите количество батареек');
+        return;
+    }
+
     const savings = {
         land: batteries * 20, // м² земли
         water: batteries * 400, // литров воды
@@ -159,6 +214,18 @@ function calculateBottlesSavings() {
     const glassBottles = parseInt(document.getElementById('glassBottles').value) || 0;
     const aluminumCans = parseInt(document.getElementById('aluminumCans').value) || 0;
 
+    // Валидация
+    if (plasticBottles < 0 || glassBottles < 0 || aluminumCans < 0) {
+        alert('Пожалуйста, введите положительные числа');
+        return;
+    }
+
+    // Проверка, что хотя бы одно поле заполнено
+    if (plasticBottles === 0 && glassBottles === 0 && aluminumCans === 0) {
+        alert('Пожалуйста, заполните хотя бы одно поле');
+        return;
+    }
+
     const savings = {
         energy: (plasticBottles * 0.3) + (glassBottles * 0.4) + (aluminumCans * 0.5),
         oil: plasticBottles * 0.2,
@@ -173,89 +240,124 @@ function calculateBottlesSavings() {
 function displaySavingsResults(savings, type) {
     let resultHTML = `<h3>🌿 Результаты переработки ${type}:</h3><div class="savings-grid">`;
 
-    if (savings.trees) {
+    // Счетчик для проверки, есть ли вообще данные для отображения
+    let hasData = false;
+
+    if (savings.trees && savings.trees > 0) {
         resultHTML += `<div class="saving-item">
             <span class="saving-icon">🌳</span>
             <span class="saving-value">${savings.trees.toFixed(0)}</span>
             <span class="saving-label">деревьев сохранено</span>
         </div>`;
+        hasData = true;
     }
 
-    if (savings.energy) {
+    if (savings.energy && savings.energy > 0) {
         resultHTML += `<div class="saving-item">
             <span class="saving-icon">⚡</span>
             <span class="saving-value">${savings.energy.toFixed(1)}</span>
             <span class="saving-label">кВт·ч энергии</span>
         </div>`;
+        hasData = true;
     }
 
-    if (savings.water) {
+    if (savings.water && savings.water > 0) {
         resultHTML += `<div class="saving-item">
             <span class="saving-icon">💧</span>
             <span class="saving-value">${savings.water.toFixed(0)}</span>
             <span class="saving-label">литров воды</span>
         </div>`;
+        hasData = true;
     }
 
-    if (savings.oil) {
+    if (savings.oil && savings.oil > 0) {
         resultHTML += `<div class="saving-item">
             <span class="saving-icon">🛢️</span>
             <span class="saving-value">${savings.oil.toFixed(1)}</span>
             <span class="saving-label">литров нефти</span>
         </div>`;
+        hasData = true;
     }
 
-    if (savings.land) {
+    if (savings.land && savings.land > 0) {
         resultHTML += `<div class="saving-item">
             <span class="saving-icon">🌍</span>
             <span class="saving-value">${savings.land.toFixed(0)}</span>
             <span class="saving-label">м² земли спасено</span>
         </div>`;
+        hasData = true;
     }
 
-    if (savings.co2) {
+    if (savings.co2 && savings.co2 > 0) {
         resultHTML += `<div class="saving-item">
             <span class="saving-icon">☁️</span>
             <span class="saving-value">${savings.co2.toFixed(1)}</span>
             <span class="saving-label">кг CO2 не выброшено</span>
         </div>`;
+        hasData = true;
     }
 
-    if (savings.toxins) {
+    if (savings.toxins && savings.toxins > 0) {
         resultHTML += `<div class="saving-item">
             <span class="saving-icon">☣️</span>
             <span class="saving-value">${savings.toxins.toFixed(0)}</span>
             <span class="saving-label">г токсинов нейтрализовано</span>
         </div>`;
+        hasData = true;
     }
 
-    if (savings.sand) {
+    if (savings.sand && savings.sand > 0) {
         resultHTML += `<div class="saving-item">
             <span class="saving-icon">🏖️</span>
             <span class="saving-value">${savings.sand.toFixed(1)}</span>
             <span class="saving-label">кг песка сохранено</span>
         </div>`;
+        hasData = true;
     }
 
-    if (savings.bauxite) {
+    if (savings.bauxite && savings.bauxite > 0) {
         resultHTML += `<div class="saving-item">
             <span class="saving-icon">⛰️</span>
             <span class="saving-value">${savings.bauxite.toFixed(0)}</span>
             <span class="saving-label">г бокситов сохранено</span>
         </div>`;
+        hasData = true;
     }
 
     resultHTML += `</div>`;
+    
+    if (!hasData) {
+        resultHTML = `<p style="text-align: center; color: #666;">Нет данных для отображения. Заполните форму выше.</p>`;
+    }
+    
     document.getElementById('recyclingResult').innerHTML = resultHTML;
 }
 
 // Функция для обновления статистики смертности
 function updatePollutionImpactStats() {
     // Здесь можно добавить логику для динамического обновления статистики
+    // Например, на основе текущего года или других факторов
+    const currentYear = new Date().getFullYear();
+    const growthFactor = 1 + (currentYear - 2020) * 0.02; // Рост на 2% в год
+    
+    document.getElementById('animalDeaths').textContent = (1.5 * growthFactor).toFixed(1) + ' млн';
+    document.getElementById('humanDeaths').textContent = (9 * growthFactor).toFixed(1) + ' млн';
+    
     console.log("Статистика последствий загрязнения обновлена");
 }
 
 // Вызов при загрузке
 document.addEventListener('DOMContentLoaded', function() {
     updatePollutionImpactStats();
+    
+    // Добавляем обработчики Enter для удобства
+    document.querySelectorAll('.recycling-form input').forEach(input => {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const form = this.closest('.recycling-form');
+                const button = form.querySelector('button');
+                if (button) button.click();
+            }
+        });
+    });
 });
