@@ -8,63 +8,45 @@ class HistoricalPollutionMap {
   }
   
   initMap() {
-    // Инициализация карты Leaflet
-    this.map = L.map('pollutionMap').setView([55.7558, 37.6173], 3);
+    console.log("Инициализация исторической карты...");
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(this.map);
+    // Проверяем, существует ли контейнер для карты
+    const mapContainer = document.getElementById('pollutionMap');
+    if (!mapContainer) {
+      console.error('Контейнер карты pollutionMap не найден!');
+      return;
+    }
     
-    this.addTimelineControls();
-    this.loadDataForYear(this.currentYear);
-  }
-  
-  addTimelineControls() {
-    // Создаем элементы управления временной шкалой
-    const timelineHTML = `
-      <div class="timeline-container">
-        <h4>Год: <span id="currentYearDisplay">${this.currentYear}</span></h4>
-        <input type="range" id="yearSlider" min="1800" max="2024" value="${this.currentYear}" 
-               class="timeline-slider">
-        <div class="data-type-buttons">
-          <button class="data-btn active" data-type="air">🌤️ Воздух</button>
-          <button class="data-btn" data-type="water">🌊 Вода</button>
-        </div>
-      </div>
-    `;
-    
-    // Добавляем на карту
-    L.control.custom = function(options) {
-      return new L.Control.Custom(options);
-    };
-    
-    L.Control.Custom = L.Control.extend({
-      onAdd: function(map) {
-        const div = L.DomUtil.create('div', 'custom-control');
-        div.innerHTML = timelineHTML;
-        return div;
-      }
-    });
-    
-    L.control.custom({ position: 'bottomleft' }).addTo(this.map);
-    
-    // Навешиваем обработчики событий
-    this.setupEventListeners();
+    try {
+      // Инициализация карты Leaflet
+      this.map = L.map('pollutionMap').setView([55.7558, 37.6173], 3);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(this.map);
+      
+      this.setupEventListeners();
+      this.loadDataForYear(this.currentYear);
+      console.log("Историческая карта успешно инициализирована");
+    } catch (error) {
+      console.error('Ошибка инициализации карты:', error);
+    }
   }
   
   setupEventListeners() {
+    // Слайдер года
     const yearSlider = document.getElementById('yearSlider');
-    if (yearSlider) {
+    const yearDisplay = document.getElementById('currentYearDisplay');
+    
+    if (yearSlider && yearDisplay) {
       yearSlider.addEventListener('input', (e) => {
         this.currentYear = parseInt(e.target.value);
-        const yearDisplay = document.getElementById('currentYearDisplay');
-        if (yearDisplay) {
-          yearDisplay.textContent = this.currentYear;
-        }
+        yearDisplay.textContent = this.currentYear;
         this.loadDataForYear(this.currentYear);
       });
     }
     
+    // Кнопки типа данных
     document.querySelectorAll('.data-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.data-btn').forEach(b => b.classList.remove('active'));
@@ -77,22 +59,109 @@ class HistoricalPollutionMap {
   
   async loadDataForYear(year) {
     try {
-      console.log(`Loading ${this.currentDataType} data for year: ${year}`);
-      const response = await fetch(`/.netlify/functions/historical-${this.currentDataType}?year=${year}`);
+      console.log(`Загрузка данных ${this.currentDataType} для года: ${year}`);
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      // Используем фиктивные данные вместо запросов к API
+      const data = this.getMockData(year);
+      console.log(`Загружены данные ${this.currentDataType}:`, data);
       
-      const data = await response.json();
-      console.log(`Loaded ${this.currentDataType} data:`, data);
       this.renderDataOnMap(data);
       this.updateStats(data);
     } catch (error) {
-      console.error('Error loading data:', error);
-      // Показываем сообщение об ошибке
-      this.showError('Ошибка загрузки данных. Попробуйте позже.');
+      console.error('Ошибка загрузки данных:', error);
+      this.showError('Ошибка загрузки данных. Используются демонстрационные данные.');
     }
+  }
+  
+  getMockData(year) {
+    // Фиктивные данные для демонстрации
+    if (this.currentDataType === 'air') {
+      return this.getMockAirData(year);
+    } else {
+      return this.getMockWaterData(year);
+    }
+  }
+  
+  getMockAirData(year) {
+    // Генерируем фиктивные данные о качестве воздуха
+    const cities = [
+      { name: "Москва", lat: 55.7558, lng: 37.6173, country: "Россия" },
+      { name: "Санкт-Петербург", lat: 59.9343, lng: 30.3351, country: "Россия" },
+      { name: "Новосибирск", lat: 55.0084, lng: 82.9357, country: "Россия" },
+      { name: "Екатеринбург", lat: 56.8389, lng: 60.6057, country: "Россия" },
+      { name: "Казань", lat: 55.7961, lng: 49.1064, country: "Россия" },
+      { name: "Нижний Новгород", lat: 56.3269, lng: 44.0065, country: "Россия" },
+      { name: "Киев", lat: 50.4501, lng: 30.5234, country: "Украина" },
+      { name: "Минск", lat: 53.9045, lng: 27.5615, country: "Беларусь" },
+      { name: "Астана", lat: 51.1694, lng: 71.4491, country: "Казахстан" }
+    ];
+    
+    const data = cities.map(city => {
+      // Уровень загрязнения зависит от года (увеличивается со временем)
+      const yearFactor = (year - 1800) / (2024 - 1800);
+      const basePM25 = 5 + yearFactor * 45; // от 5 до 50 µg/m³
+      const randomFactor = 0.7 + Math.random() * 0.6; // случайный фактор
+      const pm25 = Math.round(basePM25 * randomFactor);
+      
+      return {
+        coordinates: { latitude: city.lat, longitude: city.lng },
+        location: city.name,
+        city: city.name,
+        country: city.country,
+        measurements: [
+          { parameter: 'pm25', value: pm25 },
+          { parameter: 'so2', value: Math.round(10 + yearFactor * 50) },
+          { parameter: 'no2', value: Math.round(8 + yearFactor * 42) }
+        ]
+      };
+    });
+    
+    return {
+      data: data,
+      globalParameters: {
+        co2: 280 + Math.round((year - 1800) * 0.67), // CO2 от 280 до 420 ppm
+        so2: 5 + Math.round((year - 1800) * 0.23),
+        no2: 3 + Math.round((year - 1800) * 0.19)
+      }
+    };
+  }
+  
+  getMockWaterData(year) {
+    // Генерируем фиктивные данные о качестве воды
+    const points = [
+      { name: "Волга", lat: 56.1309, lng: 44.0002, country: "Россия" },
+      { name: "Днепр", lat: 50.4501, lng: 30.5234, country: "Украина" },
+      { name: "Дон", lat: 47.2226, lng: 39.7187, country: "Россия" },
+      { name: "Обь", lat: 55.0113, lng: 82.9346, country: "Россия" },
+      { name: "Енисей", lat: 55.9940, lng: 92.7974, country: "Россия" },
+      { name: "Лена", lat: 60.7233, lng: 114.9647, country: "Россия" },
+      { name: "Амур", lat: 50.2459, lng: 127.5106, country: "Россия" },
+      { name: "Нева", lat: 59.9390, lng: 30.3158, country: "Россия" }
+    ];
+    
+    const data = points.map(point => {
+      const yearFactor = (year - 1800) / (2024 - 1800);
+      const basePollution = 5 + yearFactor * 30; // от 5% до 35%
+      const randomFactor = 0.8 + Math.random() * 0.4;
+      const pollution = basePollution * randomFactor;
+      
+      return {
+        ...point,
+        pollution: pollution,
+        year: year
+      };
+    });
+    
+    // Вычисляем среднее загрязнение
+    const totalPollution = data.reduce((sum, point) => sum + point.pollution, 0);
+    const averagePollution = totalPollution / data.length;
+    
+    return {
+      points: data,
+      year: year,
+      totalPoints: data.length,
+      averagePollution: averagePollution
+    };
   }
   
   renderDataOnMap(data) {
@@ -119,7 +188,7 @@ class HistoricalPollutionMap {
   
   renderAirQuality(airData) {
     if (!airData.data || !Array.isArray(airData.data)) {
-      console.error('Invalid air data format:', airData);
+      console.error('Неверный формат данных о воздухе:', airData);
       return;
     }
     
@@ -142,10 +211,11 @@ class HistoricalPollutionMap {
         <div style="min-width: 200px;">
           <strong>${station.location}</strong><br>
           <strong>Город:</strong> ${station.city}<br>
+          <strong>Страна:</strong> ${station.country}<br>
           <strong>Год:</strong> ${this.currentYear}<br>
           <strong>PM2.5:</strong> ${pm25Value} µg/m³<br>
           <strong>Качество:</strong> ${this.getAirQualityText(quality)}<br>
-          ${airData.globalParameters ? `<strong>CO₂:</strong> ${airData.globalParameters.co2} ppm` : ''}
+          ${airData.globalParameters ? `<strong>Глобальный CO₂:</strong> ${airData.globalParameters.co2} ppm` : ''}
         </div>
       `);
       
@@ -155,7 +225,7 @@ class HistoricalPollutionMap {
   
   renderWaterQuality(waterData) {
     if (!waterData.points || !Array.isArray(waterData.points)) {
-      console.error('Invalid water data format:', waterData);
+      console.error('Неверный формат данных о воде:', waterData);
       return;
     }
     
@@ -299,19 +369,31 @@ class HistoricalPollutionMap {
   }
   
   showError(message) {
-    // Показываем сообщение об ошибке (можно реализовать toast или alert)
-    console.error('Map Error:', message);
-    // Можно добавить красивый toast вместо alert
-    alert(message);
+    console.error('Ошибка карты:', message);
+    // Можно добавить уведомление для пользователя
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 5px; z-index: 1000;';
+    errorDiv.textContent = message;
+    document.body.appendChild(errorDiv);
+    
+    setTimeout(() => {
+      document.body.removeChild(errorDiv);
+    }, 5000);
   }
 }
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
+  console.log("DOM загружен, инициализация исторической карты...");
+  
   // Проверяем, существует ли элемент карты
   if (document.getElementById('pollutionMap')) {
-    window.historicalMap = new HistoricalPollutionMap();
+    try {
+      window.historicalMap = new HistoricalPollutionMap();
+    } catch (error) {
+      console.error('Ошибка при создании исторической карты:', error);
+    }
   } else {
-    console.error('Map container #pollutionMap not found');
+    console.error('Контейнер карты pollutionMap не найден');
   }
 });
