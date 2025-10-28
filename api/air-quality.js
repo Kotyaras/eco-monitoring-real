@@ -1,22 +1,21 @@
-// functions/historical-air.js
-const fetch = require('node-fetch');
+export default async function handler(request, response) {
+  // Разрешаем CORS
+  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-exports.handler = async function(event, context) {
-  const { year = 2024 } = event.queryStringParameters;
+  if (request.method === 'OPTIONS') {
+    return response.status(200).end();
+  }
+
+  const { year = '2024' } = request.query;
   
   console.log(`Generating historical air data for year: ${year}`);
   
   const historicalData = generateHistoricalAirData(parseInt(year));
   
-  return {
-    statusCode: 200,
-    headers: { 
-      'Access-Control-Allow-Origin': '*', 
-      'Content-Type': 'application/json' 
-    },
-    body: JSON.stringify(historicalData)
-  };
-};
+  return response.status(200).json(historicalData);
+}
 
 function generateHistoricalAirData(year) {
   // Базовые исторические уровни загрязнения по годам
