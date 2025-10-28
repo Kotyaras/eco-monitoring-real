@@ -49,7 +49,7 @@ exports.handler = async function(event, context) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          fires: fires.slice(0, 30),
+          fires: fires.slice(0, 73), // Ограничиваем 73 пожарами
           total: fires.length,
           timestamp: Date.now(),
           source: 'NASA FIRMS API'
@@ -63,21 +63,8 @@ exports.handler = async function(event, context) {
   } catch (error) {
     console.error('All NASA APIs failed, using demo data:', error);
     
-    // ВСЕГДА возвращаем демо-данные
-    const demoData = [
-      { latitude: 56.5, longitude: 84.0, brightness: 320, date: new Date().toISOString(), region: "Сибирь" },
-      { latitude: 55.2, longitude: 89.8, brightness: 280, date: new Date().toISOString(), region: "Сибирь" },
-      { latitude: 54.8, longitude: 73.4, brightness: 180, date: new Date().toISOString(), region: "Сибирь" },
-      { latitude: 57.3, longitude: 94.5, brightness: 220, date: new Date().toISOString(), region: "Сибирь" },
-      { latitude: 52.3, longitude: 104.3, brightness: 250, date: new Date().toISOString(), region: "Дальний Восток" },
-      { latitude: 53.0, longitude: 158.6, brightness: 190, date: new Date().toISOString(), region: "Дальний Восток" },
-      { latitude: 58.0, longitude: 56.3, brightness: 150, date: new Date().toISOString(), region: "Урал" },
-      { latitude: 59.2, longitude: 54.8, brightness: 130, date: new Date().toISOString(), region: "Урал" },
-      { latitude: 55.8, longitude: 37.6, brightness: 90, date: new Date().toISOString(), region: "Центральная Россия" },
-      { latitude: 61.7, longitude: 30.7, brightness: 95, date: new Date().toISOString(), region: "Северо-Запад" },
-      { latitude: 45.0, longitude: 41.9, brightness: 140, date: new Date().toISOString(), region: "Юг России" },
-      { latitude: 53.2, longitude: 50.1, brightness: 125, date: new Date().toISOString(), region: "Поволжье" }
-    ];
+    // Генерируем 73 пожара по всему миру
+    const demoData = generateGlobalFires(73);
     
     console.log('Returning DEMO fire data:', demoData.length, 'fires');
     
@@ -92,7 +79,7 @@ exports.handler = async function(event, context) {
         demo: true,
         total: demoData.length,
         timestamp: Date.now(),
-        source: 'Demo Data'
+        source: 'Demo Data - Global Coverage'
       })
     };
   }
@@ -140,4 +127,80 @@ function getRegion(lat, lng) {
   if (lat >= 59 && lng >= 28 && lng <= 45) return "Северо-Запад";
   if (lat >= 44 && lng >= 37 && lng <= 50) return "Юг России";
   return "Россия";
+}
+
+// Генерация демо-данных для 73 пожаров по всему миру
+function generateGlobalFires(count) {
+  const fires = [];
+  const regions = [
+    // Северная Америка
+    { name: "Северная Америка", latMin: 25, latMax: 70, lngMin: -130, lngMax: -60, weight: 15 },
+    // Южная Америка
+    { name: "Южная Америка", latMin: -55, latMax: 15, lngMin: -80, lngMax: -35, weight: 12 },
+    // Европа
+    { name: "Европа", latMin: 35, latMax: 60, lngMin: -10, lngMax: 40, weight: 10 },
+    // Азия (включая Россию)
+    { name: "Азия", latMin: 10, latMax: 70, lngMin: 40, lngMax: 150, weight: 20 },
+    // Африка
+    { name: "Африка", latMin: -35, latMax: 35, lngMin: -20, lngMax: 50, weight: 12 },
+    // Австралия и Океания
+    { name: "Австралия", latMin: -45, latMax: -10, lngMin: 110, lngMax: 155, weight: 4 }
+  ];
+  
+  // Распределяем пожары по регионам согласно весам
+  let remaining = count;
+  const regionFires = [];
+  
+  regions.forEach(region => {
+    const regionCount = Math.round((region.weight / 73) * count);
+    regionFires.push({ ...region, count: Math.min(regionCount, remaining) });
+    remaining -= regionCount;
+  });
+  
+  // Если остались нераспределенные пожары, добавляем их в регионы с наибольшим весом
+  if (remaining > 0) {
+    regionFires.sort((a, b) => b.weight - a.weight);
+    for (let i = 0; i < remaining && i < regionFires.length; i++) {
+      regionFires[i].count++;
+    }
+  }
+  
+  // Генерируем пожары для каждого региона
+  regionFires.forEach(region => {
+    for (let i = 0; i < region.count; i++) {
+      const lat = region.latMin + Math.random() * (region.latMax - region.latMin);
+      const lng = region.lngMin + Math.random() * (region.lngMax - region.lngMin);
+      const brightness = 100 + Math.random() * 400; // от 100 до 500
+      
+      fires.push({
+        latitude: parseFloat(lat.toFixed(4)),
+        longitude: parseFloat(lng.toFixed(4)),
+        brightness: parseFloat(brightness.toFixed(1)),
+        date: new Date().toISOString(),
+        region: region.name,
+        country: getCountryByRegion(region.name, lat, lng)
+      });
+    }
+  });
+  
+  return fires;
+}
+
+// Функция для определения страны по региону и координатам
+function getCountryByRegion(region, lat, lng) {
+  const countries = {
+    "Северная Америка": ["США", "Канада", "Мексика"],
+    "Южная Америка": ["Бразилия", "Аргентина", "Чили", "Перу", "Колумбия"],
+    "Европа": ["Испания", "Португалия", "Италия", "Греция", "Франция", "Германия"],
+    "Азия": ["Россия", "Китай", "Индия", "Казахстан", "Индонезия", "Таиланд"],
+    "Африка": ["Конго", "Ангола", "Замбия", "ЮАР", "Кения", "Эфиопия"],
+    "Австралия": ["Австралия", "Новая Зеландия", "Папуа-Новая Гвинея"]
+  };
+  
+  const regionCountries = countries[region];
+  if (regionCountries) {
+    return regionCountries[Math.floor(Math.random() * regionCountries.length)];
+  }
+  
+  return "Неизвестно";
 }
