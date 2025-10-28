@@ -1,6 +1,15 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
-exports.handler = async function(event, context) {
+export default async function handler(request, response) {
+  // Разрешаем CORS
+  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (request.method === 'OPTIONS') {
+    return response.status(200).end();
+  }
+
   console.log('Forest fires function called');
   
   try {
@@ -18,10 +27,10 @@ exports.handler = async function(event, context) {
     for (const url of urls) {
       try {
         console.log('Trying URL:', url);
-        const response = await fetch(url);
+        const apiResponse = await fetch(url);
         
-        if (response.ok) {
-          const csvData = await response.text();
+        if (apiResponse.ok) {
+          const csvData = await apiResponse.text();
           console.log('Got CSV data, length:', csvData.length);
           
           if (csvData && csvData.length > 100) {
@@ -38,19 +47,12 @@ exports.handler = async function(event, context) {
     
     if (fires.length > 0) {
       console.log('Returning real fire data:', fires.length);
-      return {
-        statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fires: fires.slice(0, 73),
-          total: fires.length,
-          timestamp: Date.now(),
-          source: 'NASA FIRMS API'
-        })
-      };
+      return response.status(200).json({
+        fires: fires.slice(0, 73),
+        total: fires.length,
+        timestamp: Date.now(),
+        source: 'NASA FIRMS API'
+      });
     }
     
     throw new Error('No real fire data available');
@@ -62,22 +64,15 @@ exports.handler = async function(event, context) {
     
     console.log('Returning DEMO fire data:', demoData.length, 'fires');
     
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        fires: demoData,
-        demo: true,
-        total: demoData.length,
-        timestamp: Date.now(),
-        source: 'Demo Data - Global Coverage (Land Only)'
-      })
-    };
+    return response.status(200).json({ 
+      fires: demoData,
+      demo: true,
+      total: demoData.length,
+      timestamp: Date.now(),
+      source: 'Demo Data - Global Coverage (Land Only)'
+    });
   }
-};
+}
 
 function parseSimpleCSV(csv) {
   const fires = [];
