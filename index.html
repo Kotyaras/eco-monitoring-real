@@ -226,341 +226,509 @@
     <script src="app.js"></script>
     <script src="calculator.js"></script>
     <script src="historical-map.js"></script>
-    
     <script>
-        // Финальная версия historical-map.js (встроенная)
-        class HistoricalPollutionMap {
-            constructor() {
-                this.currentYear = 2024;
-                this.currentDataType = 'air';
-                this.currentMarkers = [];
-                this.initMap();
-            }
+    // Финальная исправленная версия historical-map.js
+    class HistoricalPollutionMap {
+        constructor() {
+            this.currentYear = 2024;
+            this.currentDataType = 'air';
+            this.currentMarkers = [];
+            this.initMap();
+        }
 
-            initMap() {
-                const mapContainer = document.getElementById('pollutionMap');
-                if (!mapContainer) return;
+        initMap() {
+            const mapContainer = document.getElementById('pollutionMap');
+            if (!mapContainer) return;
 
-                try {
-                    this.map = L.map('pollutionMap').setView([55.7558, 37.6173], 3);
-                    
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap contributors',
-                        maxZoom: 18
-                    }).addTo(this.map);
-
-                    this.setupEventListeners();
-                    this.loadDataForYear(this.currentYear);
-                } catch (error) {
-                    console.error('Ошибка инициализации карты:', error);
-                }
-            }
-
-            setupEventListeners() {
-                const yearSlider = document.getElementById('yearSlider');
-                const yearDisplay = document.getElementById('currentYearDisplay');
+            try {
+                this.map = L.map('pollutionMap').setView([30, 0], 2);
                 
-                if (yearSlider && yearDisplay) {
-                    yearSlider.addEventListener('input', (e) => {
-                        this.currentYear = parseInt(e.target.value);
-                        yearDisplay.textContent = this.currentYear;
-                        this.loadDataForYear(this.currentYear);
-                    });
-                }
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 18
+                }).addTo(this.map);
 
-                document.querySelectorAll('.data-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        document.querySelectorAll('.data-btn').forEach(b => b.classList.remove('active'));
-                        e.target.classList.add('active');
-                        this.currentDataType = e.target.dataset.type;
-                        this.loadDataForYear(this.currentYear);
-                        this.updateLegend();
-                    });
-                });
-
-                this.updateLegend();
-            }
-
-            loadDataForYear(year) {
-                const data = this.getMockData(year);
-                this.renderDataOnMap(data);
-                this.updateStats(data);
-            }
-
-            getMockData(year) {
-                if (this.currentDataType === 'air') {
-                    return this.getMockAirData(year);
-                } else {
-                    return this.getMockWaterData(year);
-                }
-            }
-
-            getMockAirData(year) {
-                const cities = [
-                    { name: "Москва", lat: 55.7558, lng: 37.6173, country: "Россия" },
-                    { name: "Санкт-Петербург", lat: 59.9343, lng: 30.3351, country: "Россия" },
-                    { name: "Новосибирск", lat: 55.0084, lng: 82.9357, country: "Россия" },
-                    { name: "Екатеринбург", lat: 56.8389, lng: 60.6057, country: "Россия" },
-                    { name: "Казань", lat: 55.7961, lng: 49.1064, country: "Россия" }
-                ];
-
-                const data = cities.map(city => {
-                    const yearFactor = (year - 1800) / (2024 - 1800);
-                    const basePM25 = 5 + yearFactor * 45;
-                    const randomFactor = 0.7 + Math.random() * 0.6;
-                    const pm25 = Math.round(basePM25 * randomFactor);
-                    
-                    return {
-                        coordinates: { latitude: city.lat, longitude: city.lng },
-                        location: city.name,
-                        city: city.name,
-                        country: city.country,
-                        measurements: [
-                            { parameter: 'pm25', value: pm25 },
-                            { parameter: 'so2', value: Math.round(10 + yearFactor * 50) },
-                            { parameter: 'no2', value: Math.round(8 + yearFactor * 42) }
-                        ]
-                    };
-                });
-                
-                return {
-                    data: data,
-                    globalParameters: {
-                        co2: 280 + Math.round((year - 1800) * 0.67),
-                        so2: 5 + Math.round((year - 1800) * 0.23),
-                        no2: 3 + Math.round((year - 1800) * 0.19)
-                    }
-                };
-            }
-
-            getMockWaterData(year) {
-                const points = [
-                    { name: "Волга", lat: 56.1309, lng: 44.0002, country: "Россия" },
-                    { name: "Днепр", lat: 50.4501, lng: 30.5234, country: "Украина" },
-                    { name: "Дон", lat: 47.2226, lng: 39.7187, country: "Россия" },
-                    { name: "Обь", lat: 55.0113, lng: 82.9346, country: "Россия" }
-                ];
-                
-                const data = points.map(point => {
-                    const yearFactor = (year - 1800) / (2024 - 1800);
-                    const basePollution = 5 + yearFactor * 30;
-                    const randomFactor = 0.8 + Math.random() * 0.4;
-                    const pollution = basePollution * randomFactor;
-                    
-                    return {
-                        ...point,
-                        pollution: pollution,
-                        year: year
-                    };
-                });
-                
-                const totalPollution = data.reduce((sum, point) => sum + point.pollution, 0);
-                const averagePollution = totalPollution / data.length;
-                
-                return {
-                    points: data,
-                    year: year,
-                    totalPoints: data.length,
-                    averagePollution: averagePollution
-                };
-            }
-
-            renderDataOnMap(data) {
-                this.clearMarkers();
-                
-                if (this.currentDataType === 'air') {
-                    this.renderAirQuality(data);
-                } else {
-                    this.renderWaterQuality(data);
-                }
-            }
-
-            clearMarkers() {
-                if (this.currentMarkers && this.currentMarkers.length > 0) {
-                    this.currentMarkers.forEach(marker => {
-                        if (marker && this.map.hasLayer(marker)) {
-                            this.map.removeLayer(marker);
-                        }
-                    });
-                    this.currentMarkers = [];
-                }
-            }
-
-            renderAirQuality(airData) {
-                if (!airData.data || !Array.isArray(airData.data)) return;
-
-                airData.data.forEach(station => {
-                    if (!station.coordinates) return;
-
-                    const pm25Value = station.measurements.find(m => m.parameter === 'pm25')?.value || 0;
-                    const quality = this.getAirQualityByValue(pm25Value);
-
-                    const marker = L.circleMarker([station.coordinates.latitude, station.coordinates.longitude], {
-                        radius: 15,
-                        fillColor: this.getAirQualityColor(quality),
-                        color: '#000',
-                        weight: 1,
-                        opacity: 0.8,
-                        fillOpacity: 0.7
-                    }).addTo(this.map);
-
-                    marker.bindPopup(`
-                        <div style="min-width: 200px;">
-                            <strong>${station.location}</strong><br>
-                            <strong>Город:</strong> ${station.city}<br>
-                            <strong>Страна:</strong> ${station.country}<br>
-                            <strong>Год:</strong> ${this.currentYear}<br>
-                            <strong>PM2.5:</strong> ${pm25Value} µg/m³<br>
-                            <strong>Качество:</strong> ${this.getAirQualityText(quality)}<br>
-                            ${airData.globalParameters ? `<strong>Глобальный CO₂:</strong> ${airData.globalParameters.co2} ppm` : ''}
-                        </div>
-                    `);
-
-                    this.currentMarkers.push(marker);
-                });
-            }
-
-            renderWaterQuality(waterData) {
-                if (!waterData.points || !Array.isArray(waterData.points)) return;
-
-                waterData.points.forEach(point => {
-                    const marker = L.circleMarker([point.lat, point.lng], {
-                        radius: 12,
-                        fillColor: this.getWaterQualityColor(point.pollution),
-                        color: '#000',
-                        weight: 1,
-                        opacity: 0.8,
-                        fillOpacity: 0.7
-                    }).addTo(this.map);
-
-                    marker.bindPopup(`
-                        <div style="min-width: 200px;">
-                            <strong>${point.name}</strong><br>
-                            <strong>Год:</strong> ${waterData.year}<br>
-                            <strong>Загрязнение:</strong> ${point.pollution.toFixed(1)}%<br>
-                            <strong>Качество:</strong> ${this.getWaterQualityText(point.pollution)}<br>
-                            ${point.country ? `<strong>Страна:</strong> ${point.country}` : ''}
-                        </div>
-                    `);
-
-                    this.currentMarkers.push(marker);
-                });
-            }
-
-            getAirQualityByValue(pm25) {
-                if (pm25 <= 12) return 'excellent';
-                if (pm25 <= 35) return 'good';
-                if (pm25 <= 55) return 'moderate';
-                if (pm25 <= 150) return 'poor';
-                return 'very-poor';
-            }
-
-            getAirQualityColor(quality) {
-                const colors = {
-                    'excellent': '#00e400',
-                    'good': '#ffff00',
-                    'moderate': '#ff7e00',
-                    'poor': '#ff0000',
-                    'very-poor': '#8f3f97'
-                };
-                return colors[quality] || '#cccccc';
-            }
-
-            getWaterQualityColor(pollution) {
-                if (pollution < 20) return '#1e90ff';
-                if (pollution < 40) return '#00ced1';
-                if (pollution < 60) return '#ffa500';
-                return '#ff4500';
-            }
-
-            getAirQualityText(quality) {
-                const texts = {
-                    'excellent': 'Отличное',
-                    'good': 'Хорошее',
-                    'moderate': 'Умеренное',
-                    'poor': 'Плохое',
-                    'very-poor': 'Очень плохое'
-                };
-                return texts[quality] || 'Неизвестно';
-            }
-
-            getWaterQualityText(pollution) {
-                if (pollution < 20) return 'Отличное';
-                if (pollution < 40) return 'Хорошее';
-                if (pollution < 60) return 'Умеренное';
-                return 'Плохое';
-            }
-
-            updateStats(data) {
-                const statsYear = document.getElementById('statsYear');
-                if (statsYear) {
-                    statsYear.textContent = this.currentYear;
-                }
-
-                if (this.currentDataType === 'air') {
-                    this.updateAirStats(data);
-                } else {
-                    this.updateWaterStats(data);
-                }
-
-                this.toggleStatsVisibility();
-            }
-
-            updateAirStats(airData) {
-                const co2Value = document.getElementById('co2Value');
-                const so2Value = document.getElementById('so2Value');
-                const no2Value = document.getElementById('no2Value');
-
-                if (airData.globalParameters) {
-                    if (co2Value) co2Value.textContent = airData.globalParameters.co2;
-                    if (so2Value) so2Value.textContent = airData.globalParameters.so2;
-                    if (no2Value) no2Value.textContent = airData.globalParameters.no2;
-                }
-            }
-
-            updateWaterStats(waterData) {
-                const waterStationsCount = document.getElementById('waterStationsCount');
-                const avgWaterPollution = document.getElementById('avgWaterPollution');
-
-                if (waterStationsCount) waterStationsCount.textContent = waterData.totalPoints || 0;
-                if (avgWaterPollution && waterData.averagePollution) {
-                    avgWaterPollution.textContent = waterData.averagePollution.toFixed(1);
-                }
-            }
-
-            toggleStatsVisibility() {
-                const airStats = document.getElementById('airStats');
-                const waterStats = document.getElementById('waterStats');
-                const airLegend = document.getElementById('airLegend');
-                const waterLegend = document.getElementById('waterLegend');
-
-                if (this.currentDataType === 'air') {
-                    if (airStats) airStats.style.display = 'block';
-                    if (waterStats) waterStats.style.display = 'none';
-                    if (airLegend) airLegend.style.display = 'block';
-                    if (waterLegend) waterLegend.style.display = 'none';
-                } else {
-                    if (airStats) airStats.style.display = 'none';
-                    if (waterStats) waterStats.style.display = 'block';
-                    if (airLegend) airLegend.style.display = 'none';
-                    if (waterLegend) waterLegend.style.display = 'block';
-                }
-            }
-
-            updateLegend() {
-                this.toggleStatsVisibility();
+                this.setupEventListeners();
+                this.loadDataForYear(this.currentYear);
+            } catch (error) {
+                console.error('Ошибка инициализации карты:', error);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            if (document.getElementById('pollutionMap')) {
-                try {
-                    window.historicalMap = new HistoricalPollutionMap();
-                } catch (error) {
-                    console.error('Ошибка при создании исторической карты:', error);
-                }
+        setupEventListeners() {
+            const yearSlider = document.getElementById('yearSlider');
+            const yearDisplay = document.getElementById('currentYearDisplay');
+            
+            if (yearSlider && yearDisplay) {
+                yearSlider.addEventListener('input', (e) => {
+                    this.currentYear = parseInt(e.target.value);
+                    yearDisplay.textContent = this.currentYear;
+                    this.loadDataForYear(this.currentYear);
+                });
             }
-        });
-    </script>
+
+            document.querySelectorAll('.data-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.data-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    this.currentDataType = e.target.dataset.type;
+                    this.loadDataForYear(this.currentYear);
+                });
+            });
+        }
+
+        loadDataForYear(year) {
+            const data = this.getMockData(year);
+            this.renderDataOnMap(data);
+            this.updateStats(data);
+        }
+
+        getMockData(year) {
+            if (this.currentDataType === 'air') {
+                return this.getMockAirData(year);
+            } else {
+                return this.getMockWaterData(year);
+            }
+        }
+
+        getMockAirData(year) {
+            const cities = [
+                // Россия (10 городов)
+                { name: "Москва", lat: 55.7558, lng: 37.6173, country: "Россия" },
+                { name: "Санкт-Петербург", lat: 59.9343, lng: 30.3351, country: "Россия" },
+                { name: "Новосибирск", lat: 55.0084, lng: 82.9357, country: "Россия" },
+                { name: "Екатеринбург", lat: 56.8389, lng: 60.6057, country: "Россия" },
+                { name: "Казань", lat: 55.7961, lng: 49.1064, country: "Россия" },
+                { name: "Нижний Новгород", lat: 56.3269, lng: 44.0065, country: "Россия" },
+                { name: "Челябинск", lat: 55.1644, lng: 61.4368, country: "Россия" },
+                { name: "Самара", lat: 53.1959, lng: 50.1002, country: "Россия" },
+                { name: "Омск", lat: 54.9885, lng: 73.3242, country: "Россия" },
+                { name: "Ростов-на-Дону", lat: 47.2226, lng: 39.7187, country: "Россия" },
+
+                // Европа (15 городов)
+                { name: "Лондон", lat: 51.5074, lng: -0.1278, country: "Великобритания" },
+                { name: "Париж", lat: 48.8566, lng: 2.3522, country: "Франция" },
+                { name: "Берлин", lat: 52.5200, lng: 13.4050, country: "Германия" },
+                { name: "Мадрид", lat: 40.4168, lng: -3.7038, country: "Испания" },
+                { name: "Рим", lat: 41.9028, lng: 12.4964, country: "Италия" },
+                { name: "Киев", lat: 50.4501, lng: 30.5234, country: "Украина" },
+                { name: "Варшава", lat: 52.2297, lng: 21.0122, country: "Польша" },
+                { name: "Прага", lat: 50.0755, lng: 14.4378, country: "Чехия" },
+                { name: "Будапешт", lat: 47.4979, lng: 19.0402, country: "Венгрия" },
+                { name: "Вена", lat: 48.2082, lng: 16.3738, country: "Австрия" },
+                { name: "Амстердам", lat: 52.3676, lng: 4.9041, country: "Нидерланды" },
+                { name: "Брюссель", lat: 50.8503, lng: 4.3517, country: "Бельгия" },
+                { name: "Стокгольм", lat: 59.3293, lng: 18.0686, country: "Швеция" },
+                { name: "Осло", lat: 59.9139, lng: 10.7522, country: "Норвегия" },
+                { name: "Хельсинки", lat: 60.1699, lng: 24.9384, country: "Финляндия" },
+
+                // Азия (15 городов)
+                { name: "Пекин", lat: 39.9042, lng: 116.4074, country: "Китай" },
+                { name: "Токио", lat: 35.6762, lng: 139.6503, country: "Япония" },
+                { name: "Сеул", lat: 37.5665, lng: 126.9780, country: "Южная Корея" },
+                { name: "Дели", lat: 28.6139, lng: 77.2090, country: "Индия" },
+                { name: "Мумбаи", lat: 19.0760, lng: 72.8777, country: "Индия" },
+                { name: "Бангкок", lat: 13.7563, lng: 100.5018, country: "Таиланд" },
+                { name: "Сингапур", lat: 1.3521, lng: 103.8198, country: "Сингапур" },
+                { name: "Джакарта", lat: -6.2088, lng: 106.8456, country: "Индонезия" },
+                { name: "Манила", lat: 14.5995, lng: 120.9842, country: "Филиппины" },
+                { name: "Куала-Лумпур", lat: 3.1390, lng: 101.6869, country: "Малайзия" },
+                { name: "Дубай", lat: 25.2048, lng: 55.2708, country: "ОАЭ" },
+                { name: "Тегеран", lat: 35.6892, lng: 51.3890, country: "Иран" },
+                { name: "Багдад", lat: 33.3152, lng: 44.3661, country: "Ирак" },
+                { name: "Эр-Рияд", lat: 24.7136, lng: 46.6753, country: "Саудовская Аравия" },
+                { name: "Анкара", lat: 39.9334, lng: 32.8597, country: "Турция" },
+
+                // Северная Америка (10 городов)
+                { name: "Нью-Йорк", lat: 40.7128, lng: -74.0060, country: "США" },
+                { name: "Лос-Анджелес", lat: 34.0522, lng: -118.2437, country: "США" },
+                { name: "Чикаго", lat: 41.8781, lng: -87.6298, country: "США" },
+                { name: "Торонто", lat: 43.6532, lng: -79.3832, country: "Канада" },
+                { name: "Мехико", lat: 19.4326, lng: -99.1332, country: "Мексика" },
+                { name: "Майами", lat: 25.7617, lng: -80.1918, country: "США" },
+                { name: "Ванкувер", lat: 49.2827, lng: -123.1207, country: "Канада" },
+                { name: "Вашингтон", lat: 38.9072, lng: -77.0369, country: "США" },
+                { name: "Бостон", lat: 42.3601, lng: -71.0589, country: "США" },
+                { name: "Сан-Франциско", lat: 37.7749, lng: -122.4194, country: "США" },
+
+                // Южная Америка (10 городов)
+                { name: "Сан-Паулу", lat: -23.5505, lng: -46.6333, country: "Бразилия" },
+                { name: "Буэнос-Айрес", lat: -34.6037, lng: -58.3816, country: "Аргентина" },
+                { name: "Лима", lat: -12.0464, lng: -77.0428, country: "Перу" },
+                { name: "Богота", lat: 4.7110, lng: -74.0721, country: "Колумбия" },
+                { name: "Рио-де-Жанейро", lat: -22.9068, lng: -43.1729, country: "Бразилия" },
+                { name: "Сантьяго", lat: -33.4489, lng: -70.6693, country: "Чили" },
+                { name: "Каракас", lat: 10.4806, lng: -66.9036, country: "Венесуэла" },
+                { name: "Кито", lat: -0.1807, lng: -78.4678, country: "Эквадор" },
+                { name: "Монтевидео", lat: -34.9011, lng: -56.1645, country: "Уругвай" },
+                { name: "Ла-Пас", lat: -16.4897, lng: -68.1193, country: "Боливия" },
+
+                // Африка (10 городов)
+                { name: "Каир", lat: 30.0444, lng: 31.2357, country: "Египет" },
+                { name: "Лагос", lat: 6.5244, lng: 3.3792, country: "Нигерия" },
+                { name: "Йоханнесбург", lat: -26.2041, lng: 28.0473, country: "ЮАР" },
+                { name: "Найроби", lat: -1.2864, lng: 36.8172, country: "Кения" },
+                { name: "Кейптаун", lat: -33.9249, lng: 18.4241, country: "ЮАР" },
+                { name: "Аккра", lat: 5.6037, lng: -0.1870, country: "Гана" },
+                { name: "Адис-Абеба", lat: 9.0300, lng: 38.7400, country: "Эфиопия" },
+                { name: "Дар-эс-Салам", lat: -6.7924, lng: 39.2083, country: "Танзания" },
+                { name: "Алжир", lat: 36.7538, lng: 3.0588, country: "Алжир" },
+                { name: "Касабланка", lat: 33.5731, lng: -7.5898, country: "Марокко" },
+
+                // Австралия и Океания (5 городов)
+                { name: "Сидней", lat: -33.8688, lng: 151.2093, country: "Австралия" },
+                { name: "Мельбурн", lat: -37.8136, lng: 144.9631, country: "Австралия" },
+                { name: "Брисбен", lat: -27.4698, lng: 153.0251, country: "Австралия" },
+                { name: "Перт", lat: -31.9505, lng: 115.8605, country: "Австралия" },
+                { name: "Окленд", lat: -36.8485, lng: 174.7633, country: "Новая Зеландия" }
+            ];
+
+            const data = cities.map(city => {
+                const yearFactor = (year - 1800) / (2024 - 1800);
+                const basePM25 = 5 + yearFactor * 45;
+                const randomFactor = 0.7 + Math.random() * 0.6;
+                const pm25 = Math.round(basePM25 * randomFactor);
+                
+                return {
+                    coordinates: { latitude: city.lat, longitude: city.lng },
+                    location: city.name,
+                    city: city.name,
+                    country: city.country,
+                    measurements: [
+                        { parameter: 'pm25', value: pm25 },
+                        { parameter: 'so2', value: Math.round(10 + yearFactor * 50) },
+                        { parameter: 'no2', value: Math.round(8 + yearFactor * 42) }
+                    ]
+                };
+            });
+            
+            return {
+                data: data,
+                globalParameters: {
+                    co2: 280 + Math.round((year - 1800) * 0.67),
+                    so2: 5 + Math.round((year - 1800) * 0.23),
+                    no2: 3 + Math.round((year - 1800) * 0.19)
+                }
+            };
+        }
+
+        getMockWaterData(year) {
+            const waterPoints = [
+                // Реки России (15)
+                { name: "Волга", lat: 56.1309, lng: 44.0002, country: "Россия" },
+                { name: "Обь", lat: 55.0113, lng: 82.9346, country: "Россия" },
+                { name: "Енисей", lat: 69.4000, lng: 86.1667, country: "Россия" },
+                { name: "Лена", lat: 72.3667, lng: 126.7667, country: "Россия" },
+                { name: "Амур", lat: 52.9667, lng: 141.0333, country: "Россия" },
+                { name: "Дон", lat: 47.2226, lng: 39.7187, country: "Россия" },
+                { name: "Днепр", lat: 46.5167, lng: 30.7333, country: "Россия/Украина" },
+                { name: "Нева", lat: 59.9398, lng: 30.3146, country: "Россия" },
+                { name: "Кама", lat: 55.7961, lng: 52.0245, country: "Россия" },
+                { name: "Северная Двина", lat: 64.5401, lng: 40.5134, country: "Россия" },
+                { name: "Печора", lat: 65.1333, lng: 57.1167, country: "Россия" },
+                { name: "Колыма", lat: 69.7000, lng: 161.4000, country: "Россия" },
+                { name: "Ангара", lat: 58.1000, lng: 92.9833, country: "Россия" },
+                { name: "Иртыш", lat: 61.0833, lng: 68.8333, country: "Россия" },
+                { name: "Урал", lat: 51.2167, lng: 58.1667, country: "Россия" },
+
+                // Озера России (10)
+                { name: "Байкал", lat: 53.5000, lng: 108.0000, country: "Россия" },
+                { name: "Ладожское", lat: 61.0000, lng: 31.5000, country: "Россия" },
+                { name: "Онежское", lat: 61.5000, lng: 35.5000, country: "Россия" },
+                { name: "Таймыр", lat: 74.5333, lng: 101.6167, country: "Россия" },
+                { name: "Ханка", lat: 45.0000, lng: 132.4167, country: "Россия" },
+                { name: "Чудское", lat: 58.6667, lng: 27.5000, country: "Россия/Эстония" },
+                { name: "Белое", lat: 60.1667, lng: 37.6333, country: "Россия" },
+                { name: "Топозеро", lat: 65.6333, lng: 32.0833, country: "Россия" },
+                { name: "Ильмень", lat: 58.2667, lng: 31.2833, country: "Россия" },
+                { name: "Имандра", lat: 67.5833, lng: 33.0000, country: "Россия" },
+
+                // Европейские реки (15)
+                { name: "Дунай", lat: 45.2539, lng: 29.6581, country: "Европа" },
+                { name: "Рейн", lat: 51.9653, lng: 7.6213, country: "Германия" },
+                { name: "Сена", lat: 49.4333, lng: 1.0833, country: "Франция" },
+                { name: "Темза", lat: 51.4947, lng: -0.1083, country: "Великобритания" },
+                { name: "Эльба", lat: 53.5333, lng: 9.9833, country: "Германия" },
+                { name: "По", lat: 44.9667, lng: 12.4333, country: "Италия" },
+                { name: "Висла", lat: 54.3667, lng: 18.6667, country: "Польша" },
+                { name: "Луара", lat: 47.2667, lng: -2.1667, country: "Франция" },
+                { name: "Гвадалквивир", lat: 36.7833, lng: -6.3500, country: "Испания" },
+                { name: "Тахо", lat: 38.8667, lng: -9.0000, country: "Португалия" },
+                { name: "Одер", lat: 53.5833, lng: 14.5833, country: "Германия" },
+                { name: "Шельда", lat: 51.4333, lng: 4.1000, country: "Бельгия" },
+                { name: "Майн", lat: 50.0000, lng: 8.2833, country: "Германия" },
+                { name: "Мозель", lat: 50.3667, lng: 7.6000, country: "Германия" },
+                { name: "Дуэро", lat: 41.1500, lng: -8.6667, country: "Португалия" },
+
+                // Азиатские реки (15)
+                { name: "Янцзы", lat: 31.7833, lng: 121.9667, country: "Китай" },
+                { name: "Хуанхэ", lat: 37.5667, lng: 118.5333, country: "Китай" },
+                { name: "Ганг", lat: 22.5833, lng: 88.3667, country: "Индия" },
+                { name: "Инд", lat: 24.9167, lng: 67.0833, country: "Пакистан" },
+                { name: "Меконг", lat: 10.0333, lng: 105.7833, country: "Вьетнам" },
+                { name: "Тигр", lat: 31.0000, lng: 47.4333, country: "Ирак" },
+                { name: "Евфрат", lat: 31.0000, lng: 47.4333, country: "Ирак" },
+                { name: "Брахмапутра", lat: 25.2000, lng: 89.7667, country: "Бангладеш" },
+                { name: "Иравади", lat: 16.5000, lng: 96.3333, country: "Мьянма" },
+                { name: "Салуин", lat: 16.5000, lng: 97.6000, country: "Мьянма" },
+                { name: "Чаупхрая", lat: 13.5333, lng: 100.5833, country: "Таиланд" },
+                { name: "Сырдарья", lat: 46.9667, lng: 61.0333, country: "Казахстан" },
+                { name: "Амударья", lat: 43.6667, lng: 59.8500, country: "Узбекистан" },
+                { name: "Хатанга", lat: 71.8833, lng: 102.1000, country: "Россия" },
+                { name: "Яна", lat: 71.5333, lng: 136.6667, country: "Россия" },
+
+                // Северная Америка (10)
+                { name: "Миссисипи", lat: 29.9500, lng: -90.0667, country: "США" },
+                { name: "Миссури", lat: 38.8167, lng: -90.1500, country: "США" },
+                { name: "Колорадо", lat: 31.7833, lng: -114.7833, country: "США" },
+                { name: "Рио-Гранде", lat: 25.9333, lng: -97.1500, country: "США/Мексика" },
+                { name: "Юкон", lat: 62.5833, lng: -164.8000, country: "Канада/США" },
+                { name: "Маккензи", lat: 69.3333, lng: -133.9000, country: "Канада" },
+                { name: "Святого Лаврентия", lat: 49.0000, lng: -64.8000, country: "Канада" },
+                { name: "Колумбия", lat: 46.2500, lng: -124.0500, country: "США" },
+                { name: "Снейк", lat: 46.1833, lng: -119.0167, country: "США" },
+                { name: "Огайо", lat: 36.9833, lng: -89.1333, country: "США" },
+
+                // Южная Америка (5)
+                { name: "Амазонка", lat: -0.1667, lng: -49.0000, country: "Бразилия" },
+                { name: "Парана", lat: -33.9167, lng: -58.4167, country: "Аргентина" },
+                { name: "Ориноко", lat: 8.3333, lng: -62.6667, country: "Венесуэла" },
+                { name: "Сан-Франсиску", lat: -10.5000, lng: -36.4000, country: "Бразилия" },
+                { name: "Магдалена", lat: 11.1000, lng: -74.8500, country: "Колумбия" }
+            ];
+            
+            const data = waterPoints.map(point => {
+                const yearFactor = (year - 1800) / (2024 - 1800);
+                const basePollution = 5 + yearFactor * 30;
+                const randomFactor = 0.8 + Math.random() * 0.4;
+                const pollution = basePollution * randomFactor;
+                
+                return {
+                    coordinates: { latitude: point.lat, longitude: point.lng },
+                    location: point.name,
+                    city: point.name,
+                    country: point.country,
+                    measurements: [
+                        { parameter: 'pollution', value: pollution },
+                        { parameter: 'ph', value: 6.5 + Math.random() * 1.5 },
+                        { parameter: 'oxygen', value: 70 + Math.random() * 25 }
+                    ],
+                    pollution: pollution
+                };
+            });
+            
+            return {
+                data: data,
+                globalParameters: {
+                    averagePollution: data.reduce((sum, point) => sum + point.pollution, 0) / data.length,
+                    totalStations: data.length
+                }
+            };
+        }
+
+        renderDataOnMap(data) {
+            this.clearMarkers();
+            
+            if (this.currentDataType === 'air') {
+                this.renderAirQuality(data);
+            } else {
+                this.renderWaterQuality(data);
+            }
+        }
+
+        clearMarkers() {
+            if (this.currentMarkers && this.currentMarkers.length > 0) {
+                this.currentMarkers.forEach(marker => {
+                    if (marker && this.map.hasLayer(marker)) {
+                        this.map.removeLayer(marker);
+                    }
+                });
+                this.currentMarkers = [];
+            }
+        }
+
+        renderAirQuality(airData) {
+            if (!airData.data || !Array.isArray(airData.data)) return;
+
+            airData.data.forEach(station => {
+                if (!station.coordinates) return;
+
+                const pm25Value = station.measurements.find(m => m.parameter === 'pm25')?.value || 0;
+                const quality = this.getAirQualityByValue(pm25Value);
+
+                const marker = L.circleMarker([station.coordinates.latitude, station.coordinates.longitude], {
+                    radius: 6,
+                    fillColor: this.getAirQualityColor(quality),
+                    color: '#000',
+                    weight: 1,
+                    opacity: 0.8,
+                    fillOpacity: 0.7
+                }).addTo(this.map);
+
+                marker.bindPopup(`
+                    <div style="min-width: 200px;">
+                        <strong>${station.location}</strong><br>
+                        <strong>Страна:</strong> ${station.country}<br>
+                        <strong>Год:</strong> ${this.currentYear}<br>
+                        <strong>PM2.5:</strong> ${pm25Value} µg/m³<br>
+                        <strong>Качество:</strong> ${this.getAirQualityText(quality)}
+                    </div>
+                `);
+
+                this.currentMarkers.push(marker);
+            });
+        }
+
+        renderWaterQuality(waterData) {
+            if (!waterData.data || !Array.isArray(waterData.data)) return;
+
+            waterData.data.forEach(point => {
+                if (!point.coordinates) return;
+
+                const pollutionValue = point.pollution || point.measurements?.find(m => m.parameter === 'pollution')?.value || 0;
+                const marker = L.circleMarker([point.coordinates.latitude, point.coordinates.longitude], {
+                    radius: 6,
+                    fillColor: this.getWaterQualityColor(pollutionValue),
+                    color: '#000',
+                    weight: 1,
+                    opacity: 0.8,
+                    fillOpacity: 0.7
+                }).addTo(this.map);
+
+                marker.bindPopup(`
+                    <div style="min-width: 200px;">
+                        <strong>${point.location}</strong><br>
+                        <strong>Страна:</strong> ${point.country}<br>
+                        <strong>Год:</strong> ${this.currentYear}<br>
+                        <strong>Загрязнение:</strong> ${pollutionValue.toFixed(1)}%<br>
+                        <strong>Качество:</strong> ${this.getWaterQualityText(pollutionValue)}
+                    </div>
+                `);
+
+                this.currentMarkers.push(marker);
+            });
+        }
+
+        getAirQualityByValue(pm25) {
+            if (pm25 <= 12) return 'excellent';
+            if (pm25 <= 35) return 'good';
+            if (pm25 <= 55) return 'moderate';
+            if (pm25 <= 150) return 'poor';
+            return 'very-poor';
+        }
+
+        getAirQualityColor(quality) {
+            const colors = {
+                'excellent': '#00e400',
+                'good': '#ffff00',
+                'moderate': '#ff7e00',
+                'poor': '#ff0000',
+                'very-poor': '#8f3f97'
+            };
+            return colors[quality] || '#cccccc';
+        }
+
+        getWaterQualityColor(pollution) {
+            if (pollution < 20) return '#1e90ff';
+            if (pollution < 40) return '#00ced1';
+            if (pollution < 60) return '#ffa500';
+            return '#ff4500';
+        }
+
+        getAirQualityText(quality) {
+            const texts = {
+                'excellent': 'Отличное',
+                'good': 'Хорошее',
+                'moderate': 'Умеренное',
+                'poor': 'Плохое',
+                'very-poor': 'Очень плохое'
+            };
+            return texts[quality] || 'Неизвестно';
+        }
+
+        getWaterQualityText(pollution) {
+            if (pollution < 20) return 'Отличное';
+            if (pollution < 40) return 'Хорошее';
+            if (pollution < 60) return 'Умеренное';
+            return 'Плохое';
+        }
+
+        updateStats(data) {
+            const statsYear = document.getElementById('statsYear');
+            if (statsYear) {
+                statsYear.textContent = this.currentYear;
+            }
+
+            if (this.currentDataType === 'air') {
+                this.updateAirStats(data);
+            } else {
+                this.updateWaterStats(data);
+            }
+
+            this.toggleStatsVisibility();
+        }
+
+        updateAirStats(airData) {
+            const co2Value = document.getElementById('co2Value');
+            const so2Value = document.getElementById('so2Value');
+            const no2Value = document.getElementById('no2Value');
+
+            if (airData.globalParameters) {
+                if (co2Value) co2Value.textContent = airData.globalParameters.co2;
+                if (so2Value) so2Value.textContent = airData.globalParameters.so2;
+                if (no2Value) no2Value.textContent = airData.globalParameters.no2;
+            }
+        }
+
+        updateWaterStats(waterData) {
+            const waterStationsCount = document.getElementById('waterStationsCount');
+            const avgWaterPollution = document.getElementById('avgWaterPollution');
+
+            if (waterData.data && Array.isArray(waterData.data)) {
+                const totalPollution = waterData.data.reduce((sum, point) => {
+                    const pollution = point.pollution || point.measurements?.find(m => m.parameter === 'pollution')?.value || 0;
+                    return sum + pollution;
+                }, 0);
+                const averagePollution = totalPollution / waterData.data.length;
+
+                if (waterStationsCount) waterStationsCount.textContent = waterData.data.length;
+                if (avgWaterPollution) avgWaterPollution.textContent = averagePollution.toFixed(1);
+            } else {
+                if (waterStationsCount) waterStationsCount.textContent = '0';
+                if (avgWaterPollution) avgWaterPollution.textContent = '0';
+            }
+        }
+
+        toggleStatsVisibility() {
+            const airStats = document.getElementById('airStats');
+            const waterStats = document.getElementById('waterStats');
+            const airLegend = document.getElementById('airLegend');
+            const waterLegend = document.getElementById('waterLegend');
+
+            if (this.currentDataType === 'air') {
+                if (airStats) airStats.style.display = 'block';
+                if (waterStats) waterStats.style.display = 'none';
+                if (airLegend) airLegend.style.display = 'block';
+                if (waterLegend) waterLegend.style.display = 'none';
+            } else {
+                if (airStats) airStats.style.display = 'none';
+                if (waterStats) waterStats.style.display = 'block';
+                if (airLegend) airLegend.style.display = 'none';
+                if (waterLegend) waterLegend.style.display = 'block';
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('pollutionMap')) {
+            try {
+                window.historicalMap = new HistoricalPollutionMap();
+            } catch (error) {
+                console.error('Ошибка при создании исторической карты:', error);
+            }
+        }
+    });
+</script>
+    
 </body>
 </html>
