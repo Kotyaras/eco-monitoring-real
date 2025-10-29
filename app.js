@@ -6,7 +6,6 @@ let currentTab = 'air';
 function initMap() {
     console.log('Initializing map...');
     
-    // Проверяем существование элемента карты
     const mapElement = document.getElementById('map');
     if (!mapElement) {
         console.error('Map container #map not found');
@@ -14,22 +13,19 @@ function initMap() {
     }
     
     try {
-        // Создаем карту центром на России
-        map = L.map('map').setView([55.7558, 37.6173], 3);
+        // Глобальная карта с видом на весь мир
+        map = L.map('map').setView([30, 0], 2);
         
-        // Добавляем базовый слой
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 18
         }).addTo(map);
         
-        // Создаем слои
         airQualityLayer = L.layerGroup().addTo(map);
         fireLayer = L.layerGroup().addTo(map);
         
         console.log('Map initialized successfully');
         
-        // Загружаем начальные данные
         loadAirQualityData();
         loadFireData();
         
@@ -48,7 +44,6 @@ function showTab(tabName, event) {
     
     currentTab = tabName;
     
-    // Обновляем активные кнопки
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
@@ -56,7 +51,6 @@ function showTab(tabName, event) {
         event.target.classList.add('active');
     }
     
-    // Показываем нужный слой
     if (tabName === 'air') {
         if (map.hasLayer(fireLayer)) {
             map.removeLayer(fireLayer);
@@ -74,7 +68,6 @@ function showTab(tabName, event) {
     }
 }
 
-// Загрузка данных о качестве воздуха
 async function loadAirQualityData() {
     try {
         console.log('Loading air quality data...');
@@ -83,7 +76,6 @@ async function loadAirQualityData() {
             airQualityElement.textContent = 'Загрузка...';
         }
         
-        // Добавляем timeout для fetch
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
         
@@ -100,19 +92,13 @@ async function loadAirQualityData() {
         const data = await response.json();
         console.log('Air quality data received:', data);
         
-        // Проверяем, что слой инициализирован
-        if (!airQualityLayer) {
-            console.error('airQualityLayer not initialized');
-            return;
-        }
+        if (!airQualityLayer) return;
         
-        // Очищаем слой
         airQualityLayer.clearLayers();
         
         const stations = data.data || [];
         let validStationsCount = 0;
         
-        // Добавляем маркеры на карту
         stations.forEach(station => {
             try {
                 if (station.coordinates && 
@@ -167,18 +153,12 @@ async function loadAirQualityData() {
         console.error('Error loading air quality data:', error);
         const airQualityElement = document.getElementById('airQuality');
         if (airQualityElement) {
-            if (error.name === 'AbortError') {
-                airQualityElement.textContent = 'Таймаут';
-            } else {
-                airQualityElement.textContent = 'Ошибка';
-            }
+            airQualityElement.textContent = error.name === 'AbortError' ? 'Таймаут' : 'Ошибка';
         }
-        // Показываем демо-данные при ошибке
         showDemoAirQuality();
     }
 }
 
-// Загрузка данных о пожарах
 async function loadFireData() {
     try {
         console.log('Loading fire data...');
@@ -187,7 +167,6 @@ async function loadFireData() {
             fireCounterElement.textContent = 'Загрузка...';
         }
         
-        // Добавляем timeout для fetch
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
         
@@ -204,23 +183,16 @@ async function loadFireData() {
         const data = await response.json();
         console.log('Fire data received:', data);
         
-        // Проверяем, что слой инициализирован
-        if (!fireLayer) {
-            console.error('fireLayer not initialized');
-            return;
-        }
+        if (!fireLayer) return;
         
-        // Очищаем слой
         fireLayer.clearLayers();
         
         const fires = data.fires || [];
         let validFiresCount = 0;
         
-        // Добавляем маркеры пожаров на карту
         fires.forEach(fire => {
             try {
                 if (fire.latitude && fire.longitude && fire.brightness) {
-                    // Увеличиваем размер маркера для лучшей видимости
                     const intensity = Math.min(Math.max(fire.brightness / 30, 4), 12);
                     
                     const marker = L.circleMarker(
@@ -264,7 +236,6 @@ async function loadFireData() {
         }
         console.log('Fire data loaded:', validFiresCount);
         
-        // Если данные демо, показываем уведомление
         if (data.demo) {
             showDemoNotification('Используются демо-данные о пожарах');
         }
@@ -273,18 +244,12 @@ async function loadFireData() {
         console.error('Error loading fire data:', error);
         const fireCounterElement = document.getElementById('fireCounter');
         if (fireCounterElement) {
-            if (error.name === 'AbortError') {
-                fireCounterElement.textContent = 'Таймаут';
-            } else {
-                fireCounterElement.textContent = 'Ошибка';
-            }
+            fireCounterElement.textContent = error.name === 'AbortError' ? 'Таймаут' : 'Ошибка';
         }
-        // Показываем демо-данные при ошибке
         showDemoFireData();
     }
 }
 
-// Показать демо-данные о качестве воздуха
 function showDemoAirQuality() {
     console.log('Showing demo air quality data');
     const airQualityElement = document.getElementById('airQuality');
@@ -292,15 +257,48 @@ function showDemoAirQuality() {
         airQualityElement.textContent = '85';
     }
     
-    // Создаем несколько демо-станций в ключевых городах России
     const demoStations = [
+        // Европа
         { name: "Москва", lat: 55.7558, lng: 37.6173, pm25: 15 },
-        { name: "Санкт-Петербург", lat: 59.9343, lng: 30.3351, pm25: 12 },
-        { name: "Новосибирск", lat: 55.0084, lng: 82.9357, pm25: 18 },
-        { name: "Екатеринбург", lat: 56.8389, lng: 60.6057, pm25: 22 },
-        { name: "Казань", lat: 55.7961, lng: 49.1064, pm25: 16 },
-        { name: "Краснодар", lat: 45.0355, lng: 38.9753, pm25: 14 },
-        { name: "Владивосток", lat: 43.1155, lng: 131.8855, pm25: 20 }
+        { name: "Лондон", lat: 51.5074, lng: -0.1278, pm25: 12 },
+        { name: "Париж", lat: 48.8566, lng: 2.3522, pm25: 18 },
+        { name: "Берлин", lat: 52.5200, lng: 13.4050, pm25: 14 },
+        { name: "Мадрид", lat: 40.4168, lng: -3.7038, pm25: 16 },
+        
+        // Азия
+        { name: "Пекин", lat: 39.9042, lng: 116.4074, pm25: 45 },
+        { name: "Токио", lat: 35.6762, lng: 139.6503, pm25: 22 },
+        { name: "Дели", lat: 28.6139, lng: 77.2090, pm25: 38 },
+        { name: "Сеул", lat: 37.5665, lng: 126.9780, pm25: 25 },
+        { name: "Бангкок", lat: 13.7563, lng: 100.5018, pm25: 32 },
+        
+        // Северная Америка
+        { name: "Нью-Йорк", lat: 40.7128, lng: -74.0060, pm25: 13 },
+        { name: "Лос-Анджелес", lat: 34.0522, lng: -118.2437, pm25: 28 },
+        { name: "Торонто", lat: 43.6532, lng: -79.3832, pm25: 11 },
+        { name: "Мехико", lat: 19.4326, lng: -99.1332, pm25: 35 },
+        { name: "Чикаго", lat: 41.8781, lng: -87.6298, pm25: 16 },
+        
+        // Южная Америка
+        { name: "Сан-Паулу", lat: -23.5505, lng: -46.6333, pm25: 24 },
+        { name: "Буэнос-Айрес", lat: -34.6037, lng: -58.3816, pm25: 18 },
+        { name: "Лима", lat: -12.0464, lng: -77.0428, pm25: 29 },
+        { name: "Богота", lat: 4.7110, lng: -74.0721, pm25: 26 },
+        { name: "Сантьяго", lat: -33.4489, lng: -70.6693, pm25: 31 },
+        
+        // Африка
+        { name: "Каир", lat: 30.0444, lng: 31.2357, pm25: 42 },
+        { name: "Лагос", lat: 6.5244, lng: 3.3792, pm25: 37 },
+        { name: "Йоханнесбург", lat: -26.2041, lng: 28.0473, pm25: 33 },
+        { name: "Найроби", lat: -1.2864, lng: 36.8172, pm25: 28 },
+        { name: "Кейптаун", lat: -33.9249, lng: 18.4241, pm25: 19 },
+        
+        // Австралия
+        { name: "Сидней", lat: -33.8688, lng: 151.2093, pm25: 14 },
+        { name: "Мельбурн", lat: -37.8136, lng: 144.9631, pm25: 12 },
+        { name: "Перт", lat: -31.9505, lng: 115.8605, pm25: 16 },
+        { name: "Брисбен", lat: -27.4698, lng: 153.0251, pm25: 15 },
+        { name: "Окленд", lat: -36.8485, lng: 174.7633, pm25: 11 }
     ];
     
     if (airQualityLayer) {
@@ -336,7 +334,6 @@ function showDemoAirQuality() {
     showDemoNotification('Используются демо-данные о качестве воздуха');
 }
 
-// Показать демо-данные о пожарах
 function showDemoFireData() {
     console.log('Showing demo fire data');
     const fireCounterElement = document.getElementById('fireCounter');
@@ -344,59 +341,63 @@ function showDemoFireData() {
         fireCounterElement.textContent = '1,100';
     }
     
-    // Создаем демо-пожары по всей России
     if (fireLayer) {
         fireLayer.clearLayers();
         
-        // Генерируем случайные точки пожаров по территории России
-        const fireClusters = [
-            // Сибирь
-            { latMin: 55, latMax: 65, lngMin: 80, lngMax: 100, count: 300 },
-            // Дальний Восток
-            { latMin: 50, latMax: 60, lngMin: 120, lngMax: 140, count: 250 },
-            // Урал
-            { latMin: 55, latMax: 60, lngMin: 55, lngMax: 65, count: 200 },
-            // Центральная Россия
-            { latMin: 52, latMax: 58, lngMin: 35, lngMax: 50, count: 150 },
-            // Юг России
-            { latMin: 44, latMax: 50, lngMin: 40, lngMax: 48, count: 100 },
-            // Северо-Запад
-            { latMin: 58, latMax: 65, lngMin: 30, lngMax: 45, count: 100 }
+        // Глобальное распределение пожаров по всем континентам
+        const globalFireRegions = [
+            // Северная Америка - 200 пожаров
+            { latMin: 25, latMax: 50, lngMin: -125, lngMax: -65, count: 200 },
+            // Южная Америка - 180 пожаров
+            { latMin: -35, latMax: 5, lngMin: -80, lngMax: -45, count: 180 },
+            // Европа - 150 пожаров
+            { latMin: 40, latMax: 60, lngMin: -10, lngMax: 40, count: 150 },
+            // Азия - 300 пожаров
+            { latMin: 20, latMax: 60, lngMin: 60, lngMax: 140, count: 300 },
+            // Африка - 200 пожаров
+            { latMin: -35, latMax: 35, lngMin: -20, lngMax: 50, count: 200 },
+            // Австралия - 70 пожаров
+            { latMin: -35, latMax: -15, lngMin: 115, lngMax: 150, count: 70 }
         ];
         
-        fireClusters.forEach(cluster => {
-            for (let i = 0; i < cluster.count; i++) {
-                const lat = cluster.latMin + Math.random() * (cluster.latMax - cluster.latMin);
-                const lng = cluster.lngMin + Math.random() * (cluster.lngMax - cluster.lngMin);
-                const brightness = 100 + Math.random() * 300;
-                const intensity = Math.min(Math.max(brightness / 30, 4), 12);
+        globalFireRegions.forEach(region => {
+            for (let i = 0; i < region.count; i++) {
+                const lat = region.latMin + Math.random() * (region.latMax - region.latMin);
+                const lng = region.lngMin + Math.random() * (region.lngMax - region.lngMin);
                 
-                const marker = L.circleMarker(
-                    [lat, lng],
-                    {
-                        radius: intensity,
-                        fillColor: '#ff4444',
-                        color: '#cc0000',
-                        weight: 1,
-                        opacity: 0.9,
-                        fillOpacity: 0.7
-                    }
-                );
-                
-                const regions = ["Сибирь", "Дальний Восток", "Урал", "Центральная Россия", "Юг России", "Северо-Запад"];
-                const region = regions[Math.floor(Math.random() * regions.length)];
-                
-                marker.bindPopup(`
-                    <div style="min-width: 220px">
-                        <h3>🔥 Лесной пожар</h3>
-                        <p><strong>Регион:</strong> ${region}</p>
-                        <p><strong>Интенсивность:</strong> ${Math.round(brightness)}</p>
-                        <p><strong>Статус:</strong> Активный</p>
-                        <p style="color: #ff6b00; font-weight: bold;">⚠ Демо-данные</p>
-                    </div>
-                `);
-                
-                marker.addTo(fireLayer);
+                // Проверяем, что точка на суше (упрощенная проверка)
+                if (!isOcean(lat, lng)) {
+                    const brightness = 100 + Math.random() * 300;
+                    const intensity = Math.min(Math.max(brightness / 30, 4), 12);
+                    
+                    const marker = L.circleMarker(
+                        [lat, lng],
+                        {
+                            radius: intensity,
+                            fillColor: '#ff4444',
+                            color: '#cc0000',
+                            weight: 1,
+                            opacity: 0.9,
+                            fillOpacity: 0.7
+                        }
+                    );
+                    
+                    const country = getCountryByCoords(lat, lng);
+                    const regionName = getRegionByCoords(lat, lng);
+                    
+                    marker.bindPopup(`
+                        <div style="min-width: 220px">
+                            <h3>🔥 Лесной пожар</h3>
+                            <p><strong>Страна:</strong> ${country}</p>
+                            <p><strong>Регион:</strong> ${regionName}</p>
+                            <p><strong>Интенсивность:</strong> ${Math.round(brightness)}</p>
+                            <p><strong>Статус:</strong> Активный</p>
+                            <p style="color: #ff6b00; font-weight: bold;">⚠ Демо-данные</p>
+                        </div>
+                    `);
+                    
+                    marker.addTo(fireLayer);
+                }
             }
         });
     }
@@ -404,9 +405,43 @@ function showDemoFireData() {
     showDemoNotification('Используются демо-данные о пожарах');
 }
 
-// Показать уведомление о демо-данных
+// Упрощенная проверка на океан
+function isOcean(lat, lng) {
+    // Основные океаны
+    if (lng >= -70 && lng <= 20 && lat >= -50 && lat <= 50) return true; // Атлантический
+    if ((lng >= 120 || lng <= -70) && lat >= -60 && lat <= 60) return true; // Тихий
+    if (lng >= 40 && lng <= 120 && lat >= -50 && lat <= 30) return true; // Индийский
+    if (lat > 75) return true; // Северный Ледовитый
+    
+    // Основные моря
+    if (lng >= -5 && lng <= 36 && lat >= 30 && lat <= 45) return true; // Средиземное
+    if (lng >= -90 && lng <= -60 && lat >= 10 && lat <= 25) return true; // Карибское
+    
+    return false;
+}
+
+function getCountryByCoords(lat, lng) {
+    if (lat >= 50 && lng >= 30 && lng <= 180) return "Россия";
+    if (lat >= 25 && lat <= 50 && lng >= -125 && lng <= -65) return "США";
+    if (lat >= -35 && lat <= 5 && lng >= -80 && lng <= -45) return "Бразилия";
+    if (lat >= 35 && lat <= 60 && lng >= -10 && lng <= 40) return "Европа";
+    if (lat >= 20 && lat <= 40 && lng >= 70 && lng <= 100) return "Китай/Индия";
+    if (lat >= -35 && lat <= 35 && lng >= -20 && lng <= 50) return "Африка";
+    if (lat >= -35 && lat <= -15 && lng >= 115 && lng <= 150) return "Австралия";
+    return "Неизвестно";
+}
+
+function getRegionByCoords(lat, lng) {
+    if (lat >= 15 && lat <= 75 && lng >= -170 && lng <= -50) return "Северная Америка";
+    if (lat >= -55 && lat <= 15 && lng >= -85 && lng <= -30) return "Южная Америка";
+    if (lat >= 35 && lat <= 70 && lng >= -25 && lng <= 50) return "Европа";
+    if (lat >= 10 && lat <= 75 && lng >= 50 && lng <= 180) return "Азия";
+    if (lat >= -35 && lat <= 37 && lng >= -25 && lng <= 55) return "Африка";
+    if (lat >= -50 && lat <= 0 && lng >= 110 && lng <= 180) return "Австралия и Океания";
+    return "Другие регионы";
+}
+
 function showDemoNotification(message) {
-    // Создаем временное уведомление
     const notification = document.createElement('div');
     notification.style.cssText = `
         position: fixed;
@@ -425,7 +460,6 @@ function showDemoNotification(message) {
     
     document.body.appendChild(notification);
     
-    // Автоматически удаляем через 5 секунд
     setTimeout(() => {
         if (notification.parentNode) {
             notification.parentNode.removeChild(notification);
@@ -433,18 +467,16 @@ function showDemoNotification(message) {
     }, 5000);
 }
 
-// Размер маркера в зависимости от уровня загрязнения
 function getStationSize(pm25) {
     return Math.max(6, Math.min(20, pm25 / 3));
 }
 
-// Цвета для индекса качества воздуха
 function getAQIColor(pm25) {
-    if (pm25 <= 12) return '#00e400'; // Хорошо
-    if (pm25 <= 35) return '#ffff00'; // Умеренно
-    if (pm25 <= 55) return '#ff7e00'; // Нездорово
-    if (pm25 <= 150) return '#ff0000'; // Очень нездорово
-    return '#8f3f97'; // Опасно
+    if (pm25 <= 12) return '#00e400';
+    if (pm25 <= 35) return '#ffff00';
+    if (pm25 <= 55) return '#ff7e00';
+    if (pm25 <= 150) return '#ff0000';
+    return '#8f3f97';
 }
 
 function getAQILevel(pm25) {
@@ -455,39 +487,31 @@ function getAQILevel(pm25) {
     return 'Опасно';
 }
 
-// Функция для обновления данных
 function refreshData() {
     console.log('Refreshing data...');
     loadAirQualityData();
     loadFireData();
 }
 
-// Обновляем данные при возвращении на вкладку
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
-        // Страница стала видимой - обновляем данные
         refreshData();
     }
 });
 
-// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing app...');
     
-    // Добавляем обработчики для кнопок обновления (если есть)
     const refreshButtons = document.querySelectorAll('.refresh-btn');
     refreshButtons.forEach(btn => {
         btn.addEventListener('click', refreshData);
     });
     
-    // Инициализируем карту
     initMap();
     
-    // Авто-обновление каждые 10 минут
     setInterval(refreshData, 10 * 60 * 1000);
 });
 
-// Обработка ошибок глобально
 window.addEventListener('error', function(e) {
     console.error('Global error:', e.error);
 });
