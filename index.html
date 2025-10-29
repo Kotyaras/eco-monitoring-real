@@ -729,6 +729,19 @@
         }
     });
 </script>
+    <script>
+// Проверка загрузки
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded');
+    console.log('Map element:', document.getElementById('map'));
+    console.log('Historical map:', document.getElementById('pollutionMap'));
+    
+    // Проверка функций
+    console.log('calculateCarbonFootprint:', typeof calculateCarbonFootprint);
+    console.log('showTab:', typeof showTab);
+    console.log('HistoricalPollutionMap:', typeof HistoricalPollutionMap);
+});
+</script>
     
 </body>
 </html>
