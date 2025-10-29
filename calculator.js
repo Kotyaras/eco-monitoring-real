@@ -250,6 +250,12 @@ function calculateBottlesSavings() {
 }
 
 function displaySavingsResults(savings, type) {
+    const resultElement = document.getElementById('recyclingResult');
+    if (!resultElement) {
+        console.error('Элемент recyclingResult не найден!');
+        return;
+    }
+
     let resultHTML = `<h3>🌿 Результаты переработки ${type}:</h3><div class="savings-grid">`;
 
     // Счетчик для проверки, есть ли вообще данные для отображения
@@ -342,7 +348,8 @@ function displaySavingsResults(savings, type) {
         resultHTML = `<p style="text-align: center; color: #666;">Нет данных для отображения. Заполните форму выше.</p>`;
     }
     
-    document.getElementById('recyclingResult').innerHTML = resultHTML;
+    resultElement.innerHTML = resultHTML;
+    resultElement.style.display = 'block';
 }
 
 // Функция для обновления статистики смертности
@@ -366,9 +373,10 @@ function updatePollutionImpactStats() {
     console.log("Статистика последствий загрязнения обновлена");
 }
 
-// Вызов при загрузке
-document.addEventListener('DOMContentLoaded', function() {
-    updatePollutionImpactStats();
+// Инициализация при загрузке страницы
+function initRecyclingCalculator() {
+    // Показываем первую вкладку по умолчанию
+    showRecyclingTab('general');
     
     // Добавляем обработчики Enter для удобства
     document.querySelectorAll('.recycling-form input').forEach(input => {
@@ -380,4 +388,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+}
+
+// Вызов при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    updatePollutionImpactStats();
+    initRecyclingCalculator();
+    
+    // Дебаг информация
+    console.log('Калькуляторы инициализированы');
+    console.log('Доступные функции:', {
+        carbon: typeof calculateCarbonFootprint,
+        recycling: {
+            general: typeof calculateResourceSavings,
+            batteries: typeof calculateBatteriesSavings,
+            bottles: typeof calculateBottlesSavings
+        }
+    });
+});
+
+// Глобальная обработка ошибок
+window.addEventListener('error', function(e) {
+    console.error('Global error:', e.error);
+});
+
+window.addEventListener('unhandledrejection', function(e) {
+    console.error('Unhandled promise rejection:', e.reason);
 });
