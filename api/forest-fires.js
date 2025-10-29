@@ -19,7 +19,6 @@ export default async function handler(request, response) {
     const urls = [
       `https://firms.modaps.eosdis.nasa.gov/api/area/csv/MODIS_NRT/world/1/${dateStr}`,
       `https://firms.modaps.eosdis.nasa.gov/api/area/csv/VIIRS_SNPP_NRT/world/1/${dateStr}`,
-      `https://firms.modaps.eosdis.nasa.gov/api/country/csv/VIIRS_SNPP_NRT/GRC/1/${dateStr}`
     ];
     
     let fires = [];
@@ -34,9 +33,9 @@ export default async function handler(request, response) {
           console.log('Got CSV data, length:', csvData.length);
           
           if (csvData && csvData.length > 100) {
-            fires = parseSimpleCSV(csvData);
-            console.log('Parsed fires:', fires.length);
-            break;
+            const parsedFires = parseSimpleCSV(csvData);
+            fires = fires.concat(parsedFires);
+            console.log('Parsed fires:', parsedFires.length);
           }
         }
       } catch (err) {
@@ -45,22 +44,34 @@ export default async function handler(request, response) {
       }
     }
     
+    // Всегда генерируем 1100 пожаров
+    const targetCount = 1100;
+    let finalFires = [];
+    
     if (fires.length > 0) {
-      console.log('Returning real fire data:', fires.length);
-      return response.status(200).json({
-        fires: fires.slice(0, 73),
-        total: fires.length,
-        timestamp: Date.now(),
-        source: 'NASA FIRMS API'
-      });
+      finalFires = fires.slice(0, Math.min(fires.length, targetCount));
     }
     
-    throw new Error('No real fire data available');
+    // Если реальных данных меньше 1100, дополняем демо-данными
+    if (finalFires.length < targetCount) {
+      const needed = targetCount - finalFires.length;
+      const demoFires = generateGlobalFiresOnLand(needed);
+      finalFires = finalFires.concat(demoFires);
+      console.log(`Added ${demoFires.length} demo fires to reach ${targetCount}`);
+    }
+    
+    console.log('Returning fire data:', finalFires.length);
+    return response.status(200).json({
+      fires: finalFires,
+      total: finalFires.length,
+      timestamp: Date.now(),
+      source: fires.length > 0 ? 'NASA FIRMS API + Demo Data' : 'Demo Data'
+    });
     
   } catch (error) {
-    console.error('All NASA APIs failed, using demo data:', error);
+    console.error('Error, using demo data:', error);
     
-    const demoData = generateGlobalFiresOnLand(73);
+    const demoData = generateGlobalFiresOnLand(1100);
     
     console.log('Returning DEMO fire data:', demoData.length, 'fires');
     
@@ -69,7 +80,7 @@ export default async function handler(request, response) {
       demo: true,
       total: demoData.length,
       timestamp: Date.now(),
-      source: 'Demo Data - Global Coverage (Land Only)'
+      source: 'Demo Data - Global Coverage'
     });
   }
 }
@@ -80,24 +91,23 @@ function parseSimpleCSV(csv) {
   
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (!line || line.startsWith('latitude')) continue;
+    if (!line || line.startsWith('latitude') || line.startsWith('"latitude"')) continue;
     
-    const cells = line.split(',');
-    if (cells.length >= 3) {
+    const cells = line.split(',').map(cell => cell.replace(/"/g, '').trim());
+    if (cells.length >= 6) {
       const lat = parseFloat(cells[0]);
       const lng = parseFloat(cells[1]);
       const brightness = parseFloat(cells[2]);
       
       if (!isNaN(lat) && !isNaN(lng) && !isNaN(brightness)) {
-        if (lat >= 30 && lat <= 80 && lng >= 10 && lng <= 180) {
-          fires.push({
-            latitude: lat,
-            longitude: lng,
-            brightness: brightness,
-            date: cells[5] || new Date().toISOString(),
-            region: getRegion(lat, lng)
-          });
-        }
+        fires.push({
+          latitude: lat,
+          longitude: lng,
+          brightness: brightness,
+          date: cells[5] || new Date().toISOString(),
+          region: getRegion(lat, lng),
+          country: getCountryByCoords(lat, lng)
+        });
       }
     }
   }
@@ -106,70 +116,82 @@ function parseSimpleCSV(csv) {
 }
 
 function getRegion(lat, lng) {
-  if (lat >= 55 && lng >= 37 && lng <= 60) return "Центральная Россия";
-  if (lat >= 50 && lng >= 40 && lng <= 140) return "Сибирь";
-  if (lat >= 43 && lng >= 130) return "Дальний Восток";
-  if (lat >= 56 && lng >= 46 && lng <= 68) return "Урал";
-  if (lat >= 59 && lng >= 28 && lng <= 45) return "Северо-Запад";
-  if (lat >= 44 && lng >= 37 && lng <= 50) return "Юг России";
-  return "Россия";
+  if (lat >= 15 && lat <= 75 && lng >= -170 && lng <= -50) return "Северная Америка";
+  if (lat >= -55 && lat <= 15 && lng >= -85 && lng <= -30) return "Южная Америка";
+  if (lat >= 35 && lat <= 70 && lng >= -25 && lng <= 50) return "Европа";
+  if (lat >= 10 && lat <= 75 && lng >= 50 && lng <= 180) return "Азия";
+  if (lat >= -35 && lat <= 37 && lng >= -25 && lng <= 55) return "Африка";
+  if ((lat >= -50 && lat <= 0 && lng >= 110 && lng <= 180) || 
+      (lat >= -50 && lat <= -10 && lng >= 165 && lng <= 180)) return "Австралия и Океания";
+  return "Другие регионы";
+}
+
+function getCountryByCoords(lat, lng) {
+  if (lat >= 55 && lng >= 37 && lng <= 180) return "Россия";
+  if (lat >= 25 && lat <= 50 && lng >= -125 && lng <= -65) return "США";
+  if (lat >= 45 && lat <= 70 && lng >= -110 && lng <= -60) return "Канада";
+  if (lat >= -35 && lat <= 5 && lng >= -80 && lng <= -45) return "Бразилия";
+  if (lat >= 35 && lat <= 45 && lng >= -10 && lng <= 25) return "Испания/Франция";
+  if (lat >= 45 && lat <= 55 && lng >= 10 && lng <= 25) return "Германия/Польша";
+  if (lat >= 20 && lat <= 40 && lng >= 70 && lng <= 100) return "Китай/Индия";
+  return "Неизвестно";
 }
 
 function generateGlobalFiresOnLand(count) {
   const fires = [];
   
-  // Определяем только континентальные регионы с землей
   const landRegions = [
     {
       name: "Северная Америка",
       areas: [
-        { latMin: 25, latMax: 50, lngMin: -125, lngMax: -65 }, // Запад и центр США
-        { latMin: 45, latMax: 60, lngMin: -110, lngMax: -60 }, // Канада
-        { latMin: 15, latMax: 30, lngMin: -115, lngMax: -85 }  // Мексика
+        { latMin: 25, latMax: 50, lngMin: -125, lngMax: -65 },
+        { latMin: 45, latMax: 60, lngMin: -110, lngMax: -60 },
+        { latMin: 15, latMax: 30, lngMin: -115, lngMax: -85 }
       ],
-      weight: 15
+      weight: 250
     },
     {
       name: "Южная Америка",
       areas: [
-        { latMin: -35, latMax: 5, lngMin: -80, lngMax: -45 },  // Бразилия, Аргентина, Чили
-        { latMin: -10, latMax: 12, lngMin: -80, lngMax: -60 }  // Север Южной Америки
+        { latMin: -35, latMax: 5, lngMin: -80, lngMax: -45 },
+        { latMin: -10, latMax: 12, lngMin: -80, lngMax: -60 }
       ],
-      weight: 12
+      weight: 200
     },
     {
       name: "Европа",
       areas: [
-        { latMin: 40, latMax: 55, lngMin: -10, lngMax: 25 },   // Западная Европа
-        { latMin: 45, latMax: 60, lngMin: 10, lngMax: 40 },    // Восточная Европа
-        { latMin: 35, latMax: 45, lngMin: -5, lngMax: 15 }     // Южная Европа
+        { latMin: 40, latMax: 55, lngMin: -10, lngMax: 25 },
+        { latMin: 45, latMax: 60, lngMin: 10, lngMax: 40 },
+        { latMin: 35, latMax: 45, lngMin: -5, lngMax: 15 }
       ],
-      weight: 10
+      weight: 180
     },
     {
       name: "Азия",
       areas: [
-        { latMin: 20, latMax: 50, lngMin: 70, lngMax: 120 },   // Китай, Индия
-        { latMin: 50, latMax: 70, lngMin: 50, lngMax: 140 },   // Россия (Сибирь, Дальний Восток)
-        { latMin: 25, latMax: 40, lngMin: 120, lngMax: 145 }   // Япония, Корея
+        { latMin: 20, latMax: 50, lngMin: 70, lngMax: 120 },
+        { latMin: 50, latMax: 70, lngMin: 50, lngMax: 140 },
+        { latMin: 25, latMax: 40, lngMin: 120, lngMax: 145 }
       ],
-      weight: 20
+      weight: 300
     },
     {
       name: "Африка",
       areas: [
-        { latMin: -35, latMax: -5, lngMin: 15, lngMax: 35 },   // Южная Африка
-        { latMin: -5, latMax: 15, lngMin: 10, lngMax: 30 },    // Центральная Африка
-        { latMin: 15, latMax: 35, lngMin: -20, lngMax: 40 }    // Северная Африка
+        { latMin: -35, latMax: -5, lngMin: 15, lngMax: 35 },
+        { latMin: -5, latMax: 15, lngMin: 10, lngMax: 30 },
+        { latMin: 15, latMax: 35, lngMin: -20, lngMax: 40 }
       ],
-      weight: 12
+      weight: 220
     },
     {
-      name: "Австралия",
+      name: "Австралия и Океания",
       areas: [
-        { latMin: -35, latMax: -15, lngMin: 115, lngMax: 150 } // Австралия
+        { latMin: -35, latMax: -15, lngMin: 115, lngMax: 150 },
+        { latMin: -45, latMax: -35, lngMin: 165, lngMax: 180 }
       ],
-      weight: 4
+      weight: 80
     }
   ];
   
@@ -195,20 +217,16 @@ function generateGlobalFiresOnLand(count) {
   // Генерируем пожары для каждого региона
   regionFires.forEach(region => {
     let generatedInRegion = 0;
-    let attempts = 0;
-    const maxAttempts = region.count * 20; // Увеличиваем лимит попыток
     
-    while (generatedInRegion < region.count && attempts < maxAttempts) {
-      attempts++;
-      
+    while (generatedInRegion < region.count) {
       // Случайно выбираем зону внутри региона
       const area = region.areas[Math.floor(Math.random() * region.areas.length)];
       
       const lat = area.latMin + Math.random() * (area.latMax - area.latMin);
       const lng = area.lngMin + Math.random() * (area.lngMax - area.lngMin);
       
-      // Проверяем, что точка на суше (упрощенная проверка)
-      if (isDefinitelyOnLand(lat, lng)) {
+      // Проверяем, что точка на суше
+      if (isOnLand(lat, lng)) {
         const brightness = 100 + Math.random() * 400;
         
         fires.push({
@@ -224,78 +242,24 @@ function generateGlobalFiresOnLand(count) {
       }
     }
     
-    console.log(`Generated ${generatedInRegion} fires in ${region.name} (${attempts} attempts)`);
+    console.log(`Generated ${generatedInRegion} fires in ${region.name}`);
   });
   
   return fires;
 }
 
-// Улучшенная функция проверки нахождения на суше
-function isDefinitelyOnLand(lat, lng) {
-  // Основные океаны и моря (расширенный список)
+function isOnLand(lat, lng) {
+  // Основные океаны
+  if (lng >= -70 && lng <= 20 && lat >= -50 && lat <= 50) return false; // Атлантический
+  if ((lng >= 120 || lng <= -70) && lat >= -60 && lat <= 60) return false; // Тихий
+  if (lng >= 40 && lng <= 120 && lat >= -50 && lat <= 30) return false; // Индийский
+  if (lat > 75) return false; // Северный Ледовитый
   
-  // Атлантический океан
-  if (lng >= -70 && lng <= 20 && lat >= -50 && lat <= 50) return false;
+  // Основные моря
+  if (lng >= -5 && lng <= 36 && lat >= 30 && lat <= 45) return false; // Средиземное
+  if (lng >= -90 && lng <= -60 && lat >= 10 && lat <= 25) return false; // Карибское
+  if (lng >= 10 && lng <= 30 && lat >= 53 && lat <= 60) return false; // Балтийское
   
-  // Тихий океан
-  if ((lng >= 120 || lng <= -70) && lat >= -60 && lat <= 60) return false;
-  
-  // Индийский океан
-  if (lng >= 40 && lng <= 120 && lat >= -50 && lat <= 30) return false;
-  
-  // Северный Ледовитый океан
-  if (lat > 70) return false;
-  
-  // Средиземное море
-  if (lng >= -5 && lng <= 36 && lat >= 30 && lat <= 45) return false;
-  
-  // Карибское море
-  if (lng >= -90 && lng <= -60 && lat >= 10 && lat <= 25) return false;
-  
-  // Балтийское море
-  if (lng >= 10 && lng <= 30 && lat >= 53 && lat <= 60) return false;
-  
-  // Черное море
-  if (lng >= 28 && lng <= 42 && lat >= 41 && lat <= 47) return false;
-  
-  // Каспийское море
-  if (lng >= 46 && lng <= 54 && lat >= 36 && lat <= 47) return false;
-  
-  // Красное море
-  if (lng >= 32 && lng <= 43 && lat >= 12 && lat <= 30) return false;
-  
-  // Персидский залив
-  if (lng >= 48 && lng <= 56 && lat >= 24 && lat <= 30) return false;
-  
-  // Японское море
-  if (lng >= 127 && lng <= 142 && lat >= 35 && lat <= 45) return false;
-  
-  // Охотское море
-  if (lng >= 140 && lng <= 155 && lat >= 50 && lat <= 60) return false;
-  
-  // Берингово море
-  if (lng >= 160 && lng <= -160 && lat >= 55 && lat <= 65) return false;
-  
-  // Великие озера (Северная Америка)
-  if (lng >= -92 && lng <= -76 && lat >= 41 && lat <= 49) return false;
-  
-  // Озеро Байкал
-  if (lng >= 103 && lng <= 110 && lat >= 51 && lat <= 56) return false;
-  
-  // Основные пустынные регионы (где пожары менее вероятны, но возможны)
-  // Сахара
-  if (lng >= -15 && lng <= 35 && lat >= 18 && lat <= 30) {
-    // В пустыне пожары редки, но возможны в оазисах
-    return Math.random() > 0.9; // Только 10% точек в пустыне
-  }
-  
-  // Гренландия (ледник)
-  if (lng >= -70 && lng <= -10 && lat >= 60 && lat <= 85) return false;
-  
-  // Антарктида
-  if (lat < -60) return false;
-  
-  // Если не попало ни в одно исключение - считаем что на суше
   return true;
 }
 
@@ -306,18 +270,16 @@ function getCountryByRegion(region, lat, lng) {
     "Европа": getEuropeanCountry(lat, lng),
     "Азия": getAsianCountry(lat, lng),
     "Африка": getAfricanCountry(lat, lng),
-    "Австралия": ["Австралия", "Новая Зеландия"][Math.floor(Math.random() * 2)]
+    "Австралия и Океания": getOceanianCountry(lat, lng)
   };
   
   return countryMap[region] || "Неизвестно";
 }
 
-// Вспомогательные функции для определения стран по координатам
 function getNorthAmericanCountry(lat, lng) {
-  if (lat > 40 && lng < -100) return "США";
-  if (lat > 40 && lng >= -100) return "Канада";
-  if (lat < 35 && lng > -110) return "Мексика";
-  return "США";
+  if (lat > 49) return "Канада";
+  if (lat > 25) return "США";
+  return "Мексика";
 }
 
 function getSouthAmericanCountry(lat, lng) {
@@ -326,23 +288,24 @@ function getSouthAmericanCountry(lat, lng) {
 }
 
 function getEuropeanCountry(lat, lng) {
-  if (lat > 45 && lng < 10) return "Франция";
-  if (lat > 45 && lng >= 10) return "Германия";
-  if (lat < 45 && lng < 20) return "Испания";
-  if (lat < 45 && lng >= 20) return "Италия";
-  return "Европа";
+  if (lat > 55) return ["Швеция", "Финляндия", "Норвегия"][Math.floor(Math.random() * 3)];
+  if (lat > 45) return ["Германия", "Франция", "Польша"][Math.floor(Math.random() * 3)];
+  return ["Испания", "Италия", "Греция"][Math.floor(Math.random() * 3)];
 }
 
 function getAsianCountry(lat, lng) {
-  if (lat > 35 && lng < 100) return "Китай";
-  if (lat > 35 && lng >= 100) return "Россия";
-  if (lat < 35 && lng < 100) return "Индия";
-  return "Азия";
+  if (lat > 50) return "Россия";
+  if (lng > 100) return ["Китай", "Монголия"][Math.floor(Math.random() * 2)];
+  return ["Индия", "Казахстан", "Иран"][Math.floor(Math.random() * 3)];
 }
 
 function getAfricanCountry(lat, lng) {
-  if (lat > 0 && lng < 20) return "Нигерия";
-  if (lat > 0 && lng >= 20) return "Эфиопия";
-  if (lat < 0) return "ЮАР";
-  return "Африка";
+  if (lat > 15) return ["Нигерия", "Египет", "Судан"][Math.floor(Math.random() * 3)];
+  if (lat > 0) return ["ДР Конго", "Кения", "Танзания"][Math.floor(Math.random() * 3)];
+  return ["ЮАР", "Ангола", "Намибия"][Math.floor(Math.random() * 3)];
+}
+
+function getOceanianCountry(lat, lng) {
+  if (lat < -30) return "Новая Зеландия";
+  return "Австралия";
 }
