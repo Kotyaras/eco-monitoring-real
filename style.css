@@ -512,11 +512,12 @@ button:active {
 
 /* Стили для калькулятора переработки */
 .recycling-calculator {
-    background: white;
-    padding: 40px 30px;
-    margin: 30px 0;
-    border-radius: 15px;
+    background: var(--card-bg);
+    padding: 3rem;
+    margin: 3rem 0;
+    border-radius: 20px;
     box-shadow: var(--shadow);
+    border: 1px solid var(--border);
 }
 
 .calc-tabs {
@@ -772,7 +773,66 @@ button:active {
         text-align: center;
     }
 }
+/* Добавьте в существующие медиа-запросы */
 
+@media (max-width: 1024px) {
+    .timeline::before {
+        left: 40px;
+    }
+    
+    .timeline-item {
+        margin: 2.5rem 0;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Добавьте эти стили к существующим */
+    .calculator,
+    .recycling-calculator,
+    .timeline-section,
+    .map-section,
+    .historical-section {
+        padding: 2rem 1.5rem;
+        margin: 2rem 0;
+        border-radius: 15px;
+    }
+    
+    .calc-tabs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .calc-tab {
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Добавьте эти стили к существующим */
+    .calculator,
+    .recycling-calculator,
+    .timeline-section,
+    .map-section,
+    .historical-section {
+        padding: 1.5rem 1rem;
+        margin: 1.5rem 0;
+        border-radius: 12px;
+    }
+    
+    .stats-card,
+    .legend {
+        padding: 1rem;
+    }
+    
+    .savings-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .saving-item {
+        padding: 1rem;
+    }
+}
 /* Utility Classes */
 .text-success {
     color: var(--primary-green);
@@ -1250,5 +1310,127 @@ input:focus {
     .data-btn {
         padding: 0.8rem 1rem;
         font-size: 0.9rem;
+    }
+}
+/* Дополнительные улучшения и исправления */
+
+/* Убедитесь, что все секции используют единый стиль */
+.calculator,
+.recycling-calculator,
+.timeline-section,
+.map-section,
+.historical-section {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 3rem;
+    margin: 3rem 0;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+/* Улучшенные стили для вкладок калькулятора переработки */
+.calc-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.calc-tab {
+    padding: 1rem 1.5rem;
+    border: 2px solid var(--primary-green);
+    background: white;
+    color: var(--primary-green);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.calc-tab:hover {
+    background: var(--primary-green);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.calc-tab.active {
+    background: var(--primary-green);
+    color: white;
+    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.3);
+}
+
+/* Убедитесь, что все кнопки используют единый стиль */
+.data-btn,
+.calc-tab,
+.tab-btn {
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+/* Улучшенные стили для результатов */
+.savings-result {
+    margin-top: 2rem;
+    padding: 2.5rem;
+    background: linear-gradient(135deg, #f0f9f0, #e8f5e8);
+    border-radius: 15px;
+    border-left: 5px solid var(--primary-green);
+    animation: slideIn 0.5s ease;
+}
+
+/* Дополнительные анимации */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.stat-card:hover .counter {
+    animation: pulse 1s ease-in-out;
+}
+
+/* Улучшенная доступность */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Темная тема (опционально) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #1a1a1a;
+        --card-bg: #2d2d2d;
+        --text-dark: #ffffff;
+        --text-light: #cccccc;
+        --border: #404040;
+    }
+    
+    body {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    }
+    
+    .leaflet-container {
+        background: #2d2d2d;
+        filter: brightness(0.8) contrast(1.2);
+    }
+}
+
+/* Улучшения для печати */
+@media print {
+    .tab-btn,
+    .data-btn,
+    .calc-tab,
+    button {
+        display: none !important;
+    }
+    
+    .result,
+    .savings-result {
+        display: block !important;
+        break-inside: avoid;
     }
 }
