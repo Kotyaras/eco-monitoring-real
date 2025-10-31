@@ -33,6 +33,7 @@ function initMap() {
         console.error('Error initializing map:', error);
     }
 }
+// НАЙТИ существующую функцию showTab и ОБНОВИТЬ:
 
 function showTab(tabName, event) {
     console.log('Switching to tab:', tabName);
@@ -44,13 +45,19 @@ function showTab(tabName, event) {
     
     currentTab = tabName;
     
+    // Активация правильной кнопки
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
+    
     if (event && event.target) {
         event.target.classList.add('active');
+    } else {
+        // ДОБАВИТЬ ЭТУ СТРОКУ:
+        document.querySelector(`.tab-btn[onclick*="${tabName}"]`).classList.add('active');
     }
     
+    // Переключение слоев карты (остальное без изменений)
     if (tabName === 'air') {
         if (map.hasLayer(fireLayer)) {
             map.removeLayer(fireLayer);
@@ -470,6 +477,7 @@ function showDemoFireData() {
     }
 }
 
+
 // Функция для добавления кластеров интенсивных пожаров
 function addFireClusters() {
     // Кластер в Амазонии (Бразилия)
@@ -628,20 +636,47 @@ document.addEventListener('visibilitychange', function() {
     }
 });
 
+// НАЙТИ существующий блок и ОБНОВИТЬ его:
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing app...');
     
+    // Инициализация карты
+    initMap();
+    
+    // Обработчики для кнопок обновления
     const refreshButtons = document.querySelectorAll('.refresh-btn');
     refreshButtons.forEach(btn => {
         btn.addEventListener('click', refreshData);
     });
     
-    initMap();
+    // ДОБАВИТЬ ЭТО: Обработчики для калькуляторов
+    const calcButtons = document.querySelectorAll('button[onclick*="calculate"]');
+    calcButtons.forEach(btn => {
+        const onclick = btn.getAttribute('onclick');
+        if (onclick.includes('calculateCarbonFootprint')) {
+            btn.addEventListener('click', calculateCarbonFootprint);
+        } else if (onclick.includes('calculateResourceSavings')) {
+            btn.addEventListener('click', calculateResourceSavings);
+        } else if (onclick.includes('calculateBatteriesSavings')) {
+            btn.addEventListener('click', calculateBatteriesSavings);
+        } else if (onclick.includes('calculateBottlesSavings')) {
+            btn.addEventListener('click', calculateBottlesSavings);
+        }
+    });
+    
+    // ДОБАВИТЬ ЭТО: Обработчики для вкладок переработки
+    const recyclingTabs = document.querySelectorAll('.calc-tab');
+    recyclingTabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            const tabName = this.getAttribute('onclick').match(/showRecyclingTab\('([^']+)'/)[1];
+            showRecyclingTab(tabName, e);
+        });
+    });
     
     // Авто-обновление каждые 10 минут
     setInterval(refreshData, 10 * 60 * 1000);
 });
-
 window.addEventListener('error', function(e) {
     console.error('Global error:', e.error);
 });
@@ -649,3 +684,200 @@ window.addEventListener('error', function(e) {
 window.addEventListener('unhandledrejection', function(e) {
     console.error('Unhandled promise rejection:', e.reason);
 });
+// Функции для калькулятора переработки
+function showRecyclingTab(tabName, event) {
+    if (event) event.preventDefault();
+    
+    // Скрыть все формы
+    document.querySelectorAll('.recycling-form').forEach(form => {
+        form.classList.remove('active');
+    });
+    
+    // Показать нужную форму
+    document.getElementById(tabName + 'Recycling').classList.add('active');
+    
+    // Активировать нужную вкладку
+    document.querySelectorAll('.calc-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+
+function calculateResourceSavings() {
+    const paper = parseFloat(document.getElementById('paperWaste').value) || 0;
+    const plastic = parseFloat(document.getElementById('plasticWaste').value) || 0;
+    const glass = parseFloat(document.getElementById('glassWaste').value) || 0;
+    const metal = parseFloat(document.getElementById('metalWaste').value) || 0;
+    
+    const savedTrees = paper * 17; // 1 кг бумаги = 17 деревьев
+    const savedEnergy = (plastic * 5) + (glass * 3) + (metal * 8); // кВт·ч
+    const savedCO2 = (plastic * 1.5) + (glass * 0.3) + (metal * 4); // кг CO2
+    const savedWater = paper * 100; // литров
+    
+    const result = document.getElementById('recyclingResult');
+    result.innerHTML = `
+        <h3>🌱 Результаты сохранения ресурсов</h3>
+        <div class="savings-grid">
+            <div class="saving-item">
+                <span class="saving-icon">🌳</span>
+                <span class="saving-value">${savedTrees}</span>
+                <span class="saving-label">деревьев спасено</span>
+            </div>
+            <div class="saving-item">
+                <span class="saving-icon">⚡</span>
+                <span class="saving-value">${savedEnergy}</span>
+                <span class="saving-label">кВт·ч энергии сохранено</span>
+            </div>
+            <div class="saving-item">
+                <span class="saving-icon">🌍</span>
+                <span class="saving-value">${savedCO2}</span>
+                <span class="saving-label">кг CO₂ предотвращено</span>
+            </div>
+            <div class="saving-item">
+                <span class="saving-icon">💧</span>
+                <span class="saving-value">${savedWater}</span>
+                <span class="saving-label">литров воды сохранено</span>
+            </div>
+        </div>
+        <p style="margin-top: 20px; font-style: italic;">
+            Ваш вклад в сохранение планеты очень важен! Продолжайте в том же духе! 🌟
+        </p>
+    `;
+    result.style.display = 'block';
+}
+
+function calculateBatteriesSavings() {
+    const batteries = parseInt(document.getElementById('batteriesCount').value) || 0;
+    
+    const savedLand = batteries * 20; // м² земли
+    const savedWater = batteries * 400; // литров воды
+    
+    const result = document.getElementById('recyclingResult');
+    result.innerHTML = `
+        <h3>🔋 Экологический эффект переработки батареек</h3>
+        <div class="savings-grid">
+            <div class="saving-item">
+                <span class="saving-icon">🌱</span>
+                <span class="saving-value">${savedLand}</span>
+                <span class="saving-label">м² земли спасено от загрязнения</span>
+            </div>
+            <div class="saving-item">
+                <span class="saving-icon">💧</span>
+                <span class="saving-value">${savedWater}</span>
+                <span class="saving-label">литров чистой воды сохранено</span>
+            </div>
+            <div class="saving-item">
+                <span class="saving-icon">☠️</span>
+                <span class="saving-value">${batteries}</span>
+                <span class="saving-label">опасных элементов утилизировано</span>
+            </div>
+        </div>
+        <p style="margin-top: 20px; color: #ff6b6b; font-weight: bold;">
+            ⚠️ 1 батарейка загрязняет 20 м² земли и 400 л воды тяжелыми металлами!
+        </p>
+    `;
+    result.style.display = 'block';
+}
+
+function calculateBottlesSavings() {
+    const plasticBottles = parseInt(document.getElementById('plasticBottles').value) || 0;
+    const glassBottles = parseInt(document.getElementById('glassBottles').value) || 0;
+    const aluminumCans = parseInt(document.getElementById('aluminumCans').value) || 0;
+    
+    const savedOil = plasticBottles * 0.2; // литров нефти
+    const savedSand = glassBottles * 0.5; // кг песка
+    const savedEnergy = aluminumCans * 3; // кВт·ч
+    const totalItems = plasticBottles + glassBottles + aluminumCans;
+    
+    const result = document.getElementById('recyclingResult');
+    result.innerHTML = `
+        <h3>🥤 Экономия ресурсов от переработки</h3>
+        <div class="savings-grid">
+            <div class="saving-item">
+                <span class="saving-icon">🛢️</span>
+                <span class="saving-value">${savedOil.toFixed(1)}</span>
+                <span class="saving-label">литров нефти сэкономлено</span>
+            </div>
+            <div class="saving-item">
+                <span class="saving-icon">🏖️</span>
+                <span class="saving-value">${savedSand}</span>
+                <span class="saving-label">кг песка сохранено</span>
+            </div>
+            <div class="saving-item">
+                <span class="saving-icon">⚡</span>
+                <span class="saving-value">${savedEnergy}</span>
+                <span class="saving-label">кВт·ч энергии сэкономлено</span>
+            </div>
+            <div class="saving-item">
+                <span class="saving-icon">📦</span>
+                <span class="saving-value">${totalItems}</span>
+                <span class="saving-label">единиц упаковки переработано</span>
+            </div>
+        </div>
+        <p style="margin-top: 20px; font-style: italic;">
+            Переработка одной алюминиевой банки экономит достаточно энергии для работы телевизора в течение 3 часов! 📺
+        </p>
+    `;
+    result.style.display = 'block';
+}
+function calculateCarbonFootprint() {
+    const carKm = parseFloat(document.getElementById('carKm').value) || 0;
+    const electricity = parseFloat(document.getElementById('electricity').value) || 0;
+    const flights = parseInt(document.getElementById('flights').value) || 0;
+    
+    // Расчет выбросов (кг CO2 в год)
+    const carEmissions = carKm * 12 * 0.12; // 0.12 кг CO2 на км
+    const electricityEmissions = electricity * 12 * 0.5; // 0.5 кг CO2 на кВт·ч
+    const flightEmissions = flights * 200; // 200 кг CO2 за перелет
+    
+    const totalEmissions = carEmissions + electricityEmissions + flightEmissions;
+    
+    // Определение уровня
+    let level, message, color;
+    if (totalEmissions < 2000) {
+        level = "Низкий";
+        message = "Отличный результат! Вы оказываете минимальное воздействие на окружающую среду.";
+        color = "#4CAF50";
+    } else if (totalEmissions < 6000) {
+        level = "Средний";
+        message = "Хороший результат, но есть куда стремиться. Попробуйте использовать общественный транспорт.";
+        color = "#FF9800";
+    } else {
+        level = "Высокий";
+        message = "Рекомендуется сократить использование автомобиля и авиаперелетов.";
+        color = "#F44336";
+    }
+    
+    const result = document.getElementById('carbonResult');
+    result.innerHTML = `
+        <h3>🌍 Ваш углеродный след</h3>
+        <div style="text-align: center; margin: 20px 0;">
+            <div style="font-size: 3rem; font-weight: bold; color: ${color};">${Math.round(totalEmissions)} кг CO₂</div>
+            <div style="font-size: 1.2rem; color: ${color}; margin: 10px 0;">Уровень: ${level}</div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress" style="width: ${Math.min(totalEmissions/10000*100, 100)}%; background: ${color};"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <span>0 кг</span>
+            <span>10,000 кг</span>
+        </div>
+        <p>${message}</p>
+        <h4>Детализация выбросов:</h4>
+        <ul>
+            <li>🚗 Автомобиль: ${Math.round(carEmissions)} кг CO₂</li>
+            <li>💡 Электричество: ${Math.round(electricityEmissions)} кг CO₂</li>
+            <li>✈️ Перелеты: ${Math.round(flightEmissions)} кг CO₂</li>
+        </ul>
+        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-top: 15px;">
+            <strong>💡 Советы по снижению углеродного следа:</strong>
+            <ul>
+                <li>Используйте общественный транспорт или велосипед</li>
+                <li>Перейдите на энергосберегающие лампы</li>
+                <li>Сократите количество авиаперелетов</li>
+                <li>Пользуйтесь видеоконференциями вместо командировок</li>
+            </ul>
+        </div>
+    `;
+    result.style.display = 'block';
+}
