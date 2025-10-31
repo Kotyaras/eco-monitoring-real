@@ -472,6 +472,221 @@
             </div>
         </section>
     </main>
+    <!-- Секция живых данных -->
+<section class="live-data">
+    <h2>📡 Данные в реальном времени</h2>
+    
+    <div class="live-cards">
+        <!-- Климатические показатели -->
+        <div class="live-card climate">
+            <div class="live-icon">🌡️</div>
+            <h3>Глобальная температура</h3>
+            <div class="live-value" id="globalTemp">+1.21°C</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">+0.18°C за 10 лет</span>
+            </div>
+            <div class="data-source">NASA GISS</div>
+        </div>
+        
+        <div class="live-card climate">
+            <div class="live-icon">🌊</div>
+            <h3>Уровень моря</h3>
+            <div class="live-value" id="seaLevel">+103.2 мм</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">+3.7 мм/год</span>
+            </div>
+            <div class="data-source">NOAA</div>
+        </div>
+        
+        <div class="live-card climate">
+            <div class="live-icon">❄️</div>
+            <h3>Арктический лед</h3>
+            <div class="live-value" id="arcticIce">4.28 млн км²</div>
+            <div class="live-trend trend-down">
+                <span class="trend-arrow">📉</span>
+                <span class="trend-text">-12.6% за 10 лет</span>
+            </div>
+            <div class="data-source">NSIDC</div>
+        </div>
+        
+        <div class="live-card climate">
+            <div class="live-icon">🌋</div>
+            <h3>Концентрация CO₂</h3>
+            <div class="live-value" id="co2Concentration">421.3 ppm</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">+2.5 ppm/год</span>
+            </div>
+            <div class="data-source">Обсерватория Мауна-Лоа</div>
+        </div>
+
+        <!-- Качество воздуха -->
+        <div class="live-card air">
+            <div class="live-icon">💨</div>
+            <h3>Качество воздуха (PM2.5)</h3>
+            <div class="live-value" id="airQuality">42.1 µg/m³</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">Умеренное</span>
+            </div>
+            <div class="data-source">WAQI</div>
+        </div>
+        
+        <div class="live-card air">
+            <div class="live-icon">☁️</div>
+            <h3>Озоновый слой</h3>
+            <div class="live-value" id="ozoneLayer">286 Добсон</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">Восстанавливается</span>
+            </div>
+            <div class="data-source">NASA Ozone Watch</div>
+        </div>
+
+        <!-- Водные ресурсы -->
+        <div class="live-card water">
+            <div class="live-icon">💧</div>
+            <h3>Запасы пресной воды</h3>
+            <div class="live-value" id="freshWater">2.5%</div>
+            <div class="live-trend trend-down">
+                <span class="trend-arrow">📉</span>
+                <span class="trend-text">-0.3% за 20 лет</span>
+            </div>
+            <div class="data-source">UN Water</div>
+        </div>
+        
+        <div class="live-card water">
+            <div class="live-icon">🌊</div>
+            <h3>Кислотность океана</h3>
+            <div class="live-value" id="oceanAcidity">pH 8.06</div>
+            <div class="live-trend trend-down">
+                <span class="trend-arrow">📉</span>
+                <span class="trend-text">-0.02 за 10 лет</span>
+            </div>
+            <div class="data-source">NOAA PMEL</div>
+        </div>
+
+        <!-- Биоразнообразие -->
+        <div class="live-card bio">
+            <div class="live-icon">🐾</div>
+            <h3>Индекс живой планеты</h3>
+            <div class="live-value" id="livingPlanet">-69%</div>
+            <div class="live-trend trend-down">
+                <span class="trend-arrow">📉</span>
+                <span class="trend-text">С 1970 года</span>
+            </div>
+            <div class="data-source">WWF</div>
+        </div>
+        
+        <div class="live-card bio">
+            <div class="live-icon">🌳</div>
+            <h3>Потеря лесов</h3>
+            <div class="live-value" id="forestLoss">10.1 млн га</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">+12% за год</span>
+            </div>
+            <div class="data-source">Global Forest Watch</div>
+        </div>
+
+        <!-- Энергетика -->
+        <div class="live-card energy">
+            <div class="live-icon">☀️</div>
+            <h3>Возобновляемая энергия</h3>
+            <div class="live-value" id="renewableEnergy">28.3%</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">+2.1% за год</span>
+            </div>
+            <div class="data-source">IEA</div>
+        </div>
+        
+        <div class="live-card energy">
+            <div class="live-icon">🛢️</div>
+            <h3>Выбросы от энергии</h3>
+            <div class="live-value" id="energyEmissions">33.1 Гт CO₂</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">+0.9% за год</span>
+            </div>
+            <div class="data-source">IEA</div>
+        </div>
+
+        <!-- Дополнительные показатели -->
+        <div class="live-card additional">
+            <div class="live-icon">🔥</div>
+            <h3>Активные пожары</h3>
+            <div class="live-value" id="activeFires">3,847</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">+284 за сутки</span>
+            </div>
+            <div class="data-source">NASA FIRMS</div>
+        </div>
+        
+        <div class="live-card additional">
+            <div class="live-icon">🏭</div>
+            <h3>Промышленные выбросы</h3>
+            <div class="live-value" id="industrialEmissions">8.7 Гт CO₂</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">+1.2% за год</span>
+            </div>
+            <div class="data-source">UNEP</div>
+        </div>
+
+        <div class="live-card additional">
+            <div class="live-icon">🚗</div>
+            <h3>Транспортные выбросы</h3>
+            <div class="live-value" id="transportEmissions">7.3 Гт CO₂</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">+1.8% за год</span>
+            </div>
+            <div class="data-source">ITF</div>
+        </div>
+        
+        <div class="live-card additional">
+            <div class="live-icon">🗑️</div>
+            <h3>Пластик в океане</h3>
+            <div class="live-value" id="oceanPlastic">171 трлн частиц</div>
+            <div class="live-trend trend-up">
+                <span class="trend-arrow">📈</span>
+                <span class="trend-text">+2.3% за год</span>
+            </div>
+            <div class="data-source">The Ocean Cleanup</div>
+        </div>
+    </div>
+    
+    <div class="data-controls">
+        <div class="category-filters">
+            <button class="filter-btn active" data-category="all">Все показатели</button>
+            <button class="filter-btn" data-category="climate">Климат</button>
+            <button class="filter-btn" data-category="air">Воздух</button>
+            <button class="filter-btn" data-category="water">Вода</button>
+            <button class="filter-btn" data-category="bio">Биоразнообразие</button>
+            <button class="filter-btn" data-category="energy">Энергетика</button>
+            <button class="filter-btn" data-category="additional">Дополнительно</button>
+        </div>
+        
+        <div class="view-options">
+            <button class="view-btn active" data-view="grid">Сетка</button>
+            <button class="view-btn" data-view="list">Список</button>
+        </div>
+    </div>
+    
+    <div class="data-update">
+        <span class="update-time" id="updateTime">🕒 Данные обновлены: 14:30:45</span>
+        <div class="update-progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="updateProgress"></div>
+            </div>
+            <span>Следующее обновление через: <span id="countdown">29</span> сек</span>
+        </div>
+    </div>
+</section>
 
         <!-- Секция калькулятора сохранения ресурсов -->
         <section class="recycling-calculator">
