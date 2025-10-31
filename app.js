@@ -953,3 +953,166 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Unhandled promise rejection:', e.reason);
 });
 // Функции для калькулятора переработки
+// === ЖИВЫЕ ДАННЫЕ В РЕАЛЬНОМ ВРЕМЕНИ ===
+
+// Расширенные данные для живых показателей
+const liveDataMetrics = {
+    globalTemp: { value: 1.21, unit: "°C", trend: 0.018, category: "climate" },
+    seaLevel: { value: 103.2, unit: "мм", trend: 3.7, category: "climate" },
+    arcticIce: { value: 4.28, unit: "млн км²", trend: -0.48, category: "climate" },
+    co2Concentration: { value: 421.3, unit: "ppm", trend: 2.5, category: "climate" },
+    airQuality: { value: 42.1, unit: "µg/m³", trend: 1.2, category: "air" },
+    ozoneLayer: { value: 286, unit: "Добсон", trend: 0.5, category: "air" },
+    freshWater: { value: 2.5, unit: "%", trend: -0.015, category: "water" },
+    oceanAcidity: { value: 8.06, unit: "pH", trend: -0.002, category: "water" },
+    livingPlanet: { value: -69, unit: "%", trend: -1.2, category: "bio" },
+    forestLoss: { value: 10.1, unit: "млн га", trend: 1.1, category: "bio" },
+    renewableEnergy: { value: 28.3, unit: "%", trend: 2.1, category: "energy" },
+    energyEmissions: { value: 33.1, unit: "Гт CO₂", trend: 0.9, category: "energy" },
+    activeFires: { value: 3847, unit: "", trend: 284, category: "additional" },
+    industrialEmissions: { value: 8.7, unit: "Гт CO₂", trend: 1.2, category: "additional" },
+    transportEmissions: { value: 7.3, unit: "Гт CO₂", trend: 1.8, category: "additional" },
+    oceanPlastic: { value: 171, unit: "трлн частиц", trend: 3.9, category: "additional" }
+};
+
+// Инициализация живых данных
+function initLiveData() {
+    updateAllLiveData();
+    setupEventListeners();
+    startLiveUpdates();
+}
+
+// Обновление всех показателей
+function updateAllLiveData() {
+    Object.keys(liveDataMetrics).forEach(metricId => {
+        updateMetricValue(metricId);
+    });
+    updateTimestamp();
+}
+
+// Обновление конкретного показателя с небольшими случайными изменениями
+function updateMetricValue(metricId) {
+    const metric = liveDataMetrics[metricId];
+    const element = document.getElementById(metricId);
+    
+    if (element) {
+        // Добавляем небольшие случайные изменения для реалистичности
+        const randomChange = (Math.random() - 0.5) * metric.trend * 0.1;
+        const newValue = metric.value + randomChange;
+        
+        // Форматируем значение в зависимости от типа
+        let displayValue;
+        if (metricId === 'oceanAcidity') {
+            displayValue = `pH ${newValue.toFixed(2)}`;
+        } else if (metric.unit === '%' && metricId !== 'renewableEnergy') {
+            displayValue = `${newValue.toFixed(1)}${metric.unit}`;
+        } else if (metric.value > 1000) {
+            displayValue = `${newValue.toFixed(1)} ${metric.unit}`;
+        } else {
+            displayValue = `${newValue.toFixed(2)} ${metric.unit}`;
+        }
+        
+        element.textContent = displayValue;
+        
+        // Добавляем анимацию обновления
+        element.classList.add('updating');
+        setTimeout(() => {
+            element.classList.remove('updating');
+        }, 1000);
+    }
+}
+
+// Настройка обработчиков событий
+function setupEventListeners() {
+    // Фильтрация по категориям
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const category = this.dataset.category;
+            
+            // Обновляем активную кнопку
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Фильтруем карточки
+            filterCardsByCategory(category);
+        });
+    });
+    
+    // Переключение вида
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const view = this.dataset.view;
+            
+            // Обновляем активную кнопку
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Меняем вид
+            toggleView(view);
+        });
+    });
+}
+
+// Фильтрация карточек по категории
+function filterCardsByCategory(category) {
+    const cards = document.querySelectorAll('.live-card');
+    
+    cards.forEach(card => {
+        if (category === 'all' || card.classList.contains(category)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// Переключение между видами сетка/список
+function toggleView(view) {
+    const container = document.querySelector('.live-cards');
+    
+    if (view === 'list') {
+        container.classList.add('list-view');
+    } else {
+        container.classList.remove('list-view');
+    }
+}
+
+// Обновление времени и прогресс-бара
+function updateTimestamp() {
+    const now = new Date();
+    const timeString = `🕒 Данные обновлены: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+    
+    document.getElementById('updateTime').textContent = timeString;
+}
+
+// Запуск автоматических обновлений
+function startLiveUpdates() {
+    let countdown = 30;
+    const progressBar = document.getElementById('updateProgress');
+    const countdownElement = document.getElementById('countdown');
+    
+    const updateInterval = setInterval(() => {
+        countdown--;
+        countdownElement.textContent = countdown;
+        
+        // Обновляем прогресс-бар
+        const progress = ((30 - countdown) / 30) * 100;
+        progressBar.style.width = `${progress}%`;
+        
+        if (countdown <= 0) {
+            // Обновляем данные
+            updateAllLiveData();
+            countdown = 30;
+        }
+    }, 1000);
+}
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // ... существующий код ...
+    
+    // Добавьте эту строку для инициализации живых данных
+    if (document.querySelector('.live-data')) {
+        initLiveData();
+    }
+});
