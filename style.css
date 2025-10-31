@@ -1581,3 +1581,271 @@ input:focus {
         align-self: center;
     }
 }
+/* Стили для расширенной секции живых данных */
+.live-data {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px 20px;
+    border-radius: 15px;
+    margin: 30px 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.live-data h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2.2em;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.live-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.live-cards.list-view {
+    grid-template-columns: 1fr;
+}
+
+.live-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    padding: 25px 20px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.live-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s;
+}
+
+.live-card:hover::before {
+    left: 100%;
+}
+
+.live-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Категории карточек */
+.live-card.climate { border-left: 4px solid #e74c3c; }
+.live-card.air { border-left: 4px solid #3498db; }
+.live-card.water { border-left: 4px solid #1abc9c; }
+.live-card.bio { border-left: 4px solid #27ae60; }
+.live-card.energy { border-left: 4px solid #f39c12; }
+.live-card.additional { border-left: 4px solid #9b59b6; }
+
+.live-icon {
+    font-size: 2.8em;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.live-card h3 {
+    margin: 10px 0;
+    font-size: 1.1em;
+    opacity: 0.95;
+    font-weight: 600;
+    min-height: 2.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.live-value {
+    font-size: 2.4em;
+    font-weight: bold;
+    margin: 15px 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    font-family: 'Courier New', monospace;
+}
+
+.live-trend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.9em;
+    margin-bottom: 8px;
+    opacity: 0.95;
+}
+
+.trend-up { color: #ff6b6b; }
+.trend-down { color: #51cf66; }
+
+.trend-arrow {
+    font-size: 1.3em;
+}
+
+.data-source {
+    font-size: 0.75em;
+    opacity: 0.7;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* Элементы управления */
+.data-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.category-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85em;
+    backdrop-filter: blur(10px);
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+.view-options {
+    display: flex;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 25px;
+    padding: 5px;
+    backdrop-filter: blur(10px);
+}
+
+.view-btn {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    color: white;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85em;
+}
+
+.view-btn.active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Информация об обновлении */
+.data-update {
+    text-align: center;
+    opacity: 0.9;
+}
+
+.update-time {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 0.95em;
+}
+
+.update-progress {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #51cf66, #f39c12);
+    border-radius: 3px;
+    transition: width 1s linear;
+    width: 0%;
+}
+
+/* Анимации */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.updating {
+    animation: pulse 1s ease-in-out;
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+    .live-cards {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .live-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .data-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .category-filters {
+        justify-content: center;
+    }
+    
+    .view-options {
+        align-self: center;
+    }
+    
+    .live-value {
+        font-size: 2em;
+    }
+}
+
+@media (max-width: 480px) {
+    .live-data {
+        padding: 25px 15px;
+    }
+    
+    .live-card {
+        padding: 20px 15px;
+    }
+    
+    .filter-btn {
+        padding: 6px 12px;
+        font-size: 0.8em;
+    }
+}
