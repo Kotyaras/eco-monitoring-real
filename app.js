@@ -400,6 +400,75 @@ function showDemoAirQuality() {
         });
     }
 }
+// Функция для добавления кластеров интенсивных пожаров
+function addFireClusters() {
+    // Кластер в Амазонии (Бразилия)
+    const amazonFires = [
+        { lat: -3.4653, lng: -62.2159, intensity: 450 }, // Манаус
+        { lat: -5.4026, lng: -63.1238, intensity: 520 },
+        { lat: -7.3681, lng: -63.1864, intensity: 480 },
+        { lat: -4.4419, lng: -61.4472, intensity: 390 },
+        { lat: -6.7833, lng: -58.1667, intensity: 510 },
+        { lat: -8.7612, lng: -63.9039, intensity: 470 },
+        { lat: -10.9472, lng: -61.8569, intensity: 430 }
+    ];
+    
+    // Кластер в Австралии (сельские районы)
+    const australiaFires = [
+        { lat: -32.9283, lng: 151.7817, intensity: 490 }, // Новый Южный Уэльс
+        { lat: -34.0833, lng: 150.8000, intensity: 510 },
+        { lat: -36.0633, lng: 146.9153, intensity: 460 }, // Виктория
+        { lat: -37.4713, lng: 149.2300, intensity: 480 },
+        { lat: -31.9535, lng: 115.8570, intensity: 420 }, // Западная Австралия
+        { lat: -33.8688, lng: 151.2093, intensity: 380 }, // Сидней (меньшая интенсивность)
+        { lat: -27.4698, lng: 153.0251, intensity: 440 }  // Брисбен
+    ];
+    
+    // Кластер в Калифорнии
+    const californiaFires = [
+        { lat: 38.5759, lng: -121.4944, intensity: 410 }, // Сакраменто
+        { lat: 37.7749, lng: -122.4194, intensity: 380 }, // Сан-Франциско
+        { lat: 34.0522, lng: -118.2437, intensity: 390 }, // Лос-Анджелес
+        { lat: 36.7783, lng: -119.4179, intensity: 430 }  // Центральная долина
+    ];
+    
+    // Добавляем кластеры на карту
+    [amazonFires, australiaFires, californiaFires].forEach(cluster => {
+        cluster.forEach(fire => {
+            const intensity = Math.min(Math.max(fire.intensity / 25, 8), 18);
+            
+            const marker = L.circleMarker(
+                [fire.lat, fire.lng],
+                {
+                    radius: intensity,
+                    fillColor: '#ff2222',
+                    color: '#aa0000',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }
+            );
+            
+            const region = getCountryByCoords(fire.lat, fire.lng);
+            const date = new Date(Date.now() - Math.random() * 3 * 24 * 60 * 60 * 1000).toLocaleDateString('ru-RU');
+            
+            marker.bindPopup(`
+                <div style="min-width: 240px">
+                    <h3>🔥 КРИТИЧЕСКИЙ ПОЖАР</h3>
+                    <p><strong>Регион:</strong> ${region}</p>
+                    <p><strong>Интенсивность:</strong> ${fire.intensity}°C</p>
+                    <p><strong>Уровень угрозы:</strong> ВЫСОКИЙ</p>
+                    <p><strong>Дата обнаружения:</strong> ${date}</p>
+                    <p><strong>Статус:</strong> Активный, распространяется</p>
+                    <p><strong>Источник:</strong> NASA FIRMS + местные службы</p>
+                    <p style="color: #ff4444; font-weight: bold;">⚠️ Требуется вмешательство</p>
+                </div>
+            `);
+            
+            marker.addTo(fireLayer);
+        });
+    });
+}
 
 function showDemoFireData() {
     console.log('Showing demo fire data');
